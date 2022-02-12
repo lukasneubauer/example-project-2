@@ -1,0 +1,42 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+first_id_to_set_to_the_right=4
+plugin_ids_before_the_update="$(xfconf-query -c xfce4-panel -p /panels/panel-1/plugin-ids | sed '1,2d' | sort -n | tr "\n" ' ' | sed 's/\ *$//g')"
+last_plugin_id_before_update="$(echo "$plugin_ids_before_the_update" | rev | cut -d ' ' -f 1 | rev)"
+next_plugin_id_before_update="$((last_plugin_id_before_update + 1))"
+plugin_ids_to_put_at_the_end="$(echo "$plugin_ids_before_the_update" | cut -d ' ' -f "$first_id_to_set_to_the_right"-)"
+
+xfce/launchers/xfce4-panel-add-virtualbox "$0"
+xfce/launchers/xfce4-panel-add-postman "$0"
+xfce/launchers/xfce4-panel-add-wireshark "$0"
+xfce/launchers/xfce4-panel-add-playonlinux "$0"
+xfce/launchers/xfce4-panel-add-phpstorm-2019-2 "$0"
+xfce/launchers/xfce4-panel-add-phpstorm-2021-2 "$0"
+xfce/launchers/xfce4-panel-add-phpstorm-2021-3 "$0"
+xfce/launchers/xfce4-panel-add-steam "$0"
+xfce/launchers/xfce4-panel-add-nvidia-settings "$0"
+xfce/launchers/xfce4-panel-add-slack "$0"
+
+plugin_ids="$(xfconf-query -c xfce4-panel -p /panels/panel-1/plugin-ids | sed '1,2d' | sort -n | tr "\n" ' ' | sed 's/\ *$//g')"
+last_plugin_id="$(echo "$plugin_ids" | rev | cut -d ' ' -f 1 | rev)"
+
+id_list=''
+for id in $(seq 1 "$((first_id_to_set_to_the_right - 1))") ; do
+    id_list="${id_list}${id} "
+done
+for id in $(seq "$next_plugin_id_before_update" "$last_plugin_id") ; do
+    id_list="${id_list}${id} "
+done
+id_list="${id_list}${plugin_ids_to_put_at_the_end}"
+
+xfce/lib/xfconf-query-xfce4-panel-int-array "$0" '/panels/panel-1/plugin-ids' "$id_list"
+
+exe/cmd "$SUBCHANNEL_EXEC" "$0" 'xfce4-panel -r'

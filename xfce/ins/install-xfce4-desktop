@@ -1,0 +1,17 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+xfce/lib/xfconf-query-xfce4-desktop-bool "$0" '/desktop-icons/file-icons/show-device-removable' 'false'
+xfce/lib/xfconf-query-xfce4-desktop-bool "$0" '/desktop-icons/file-icons/show-filesystem' 'false'
+xfce/lib/xfconf-query-xfce4-desktop-bool "$0" '/desktop-icons/file-icons/show-home' 'false'
+xfce/lib/xfconf-query-xfce4-desktop-bool "$0" '/desktop-icons/file-icons/show-network-removable' 'false'
+xfce/lib/xfconf-query-xfce4-desktop-bool "$0" '/desktop-icons/file-icons/show-removable' 'false'
+xfce/lib/xfconf-query-xfce4-desktop-bool "$0" '/desktop-icons/file-icons/show-trash' 'false'
+xfce/lib/xfconf-query-xfce4-desktop-bool "$0" '/desktop-icons/file-icons/show-unknown-removable' 'false'

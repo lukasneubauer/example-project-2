@@ -1,0 +1,14 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+ppa_repository="$2"
+
+exe/cmd-sudo "$SUBCHANNEL_EXEC" "$call_trace -> $0" "add-apt-repository -y ppa:$ppa_repository"
+
+exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if grep -E -q \"^deb (.+)$ppa_repository\" /etc/apt/sources.list /etc/apt/sources.list.d/* ; then echo \"PPA repository \\\"$ppa_repository\\\" was added successfully.\" ; exit 0 ; else echo \"PPA repository \\\"$ppa_repository\\\" was not added.\" ; exit 1 ; fi"

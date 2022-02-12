@@ -1,0 +1,18 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+phpstorm_version='2021.3'
+phpstorm_archive="$TMP_DIR/PhpStorm-$phpstorm_version.tar.gz"
+phpstorm_dest="$OPT_DIR/PhpStorm-$phpstorm_version"
+phpstorm_exec="$phpstorm_dest/bin/phpstorm.sh"
+
+lib/get-tar-gz-archive-strip-1 "$0" "https://download.jetbrains.com/webide/PhpStorm-$phpstorm_version.tar.gz" "$phpstorm_archive" "$phpstorm_dest"
+
+exe/cmd "$SUBCHANNEL_TEST" "$0" "if [ -f \"$phpstorm_exec\" ] ; then echo \"PhpStorm was installed successfully. File \\\"$phpstorm_exec\\\" was found.\" ; exit 0 ; else echo \"PhpStorm was not installed. File \\\"$phpstorm_exec\\\" was not found.\" ; exit 1 ; fi"

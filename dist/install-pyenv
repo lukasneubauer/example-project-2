@@ -1,0 +1,52 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+deb/apt-get-update "$0"
+
+deb/apt-get-install "$0" build-essential
+deb/apt-get-install "$0" curl
+deb/apt-get-install "$0" libbz2-dev
+deb/apt-get-install "$0" libffi-dev
+deb/apt-get-install "$0" liblzma-dev
+deb/apt-get-install "$0" libncursesw5-dev
+deb/apt-get-install "$0" libreadline-dev
+deb/apt-get-install "$0" libsqlite3-dev
+deb/apt-get-install "$0" libssl-dev
+deb/apt-get-install "$0" libxml2-dev
+deb/apt-get-install "$0" libxmlsec1-dev
+deb/apt-get-install "$0" llvm
+deb/apt-get-install "$0" make
+deb/apt-get-install "$0" tk-dev
+deb/apt-get-install "$0" wget
+deb/apt-get-install "$0" xz-utils
+deb/apt-get-install "$0" zlib1g-dev
+
+pyenv_home="$HOME_DIR/.pyenv"
+pyenv_exec="$pyenv_home/bin/pyenv"
+github_url='https://github.com/pyenv'
+
+lib/git-clone "$0" "$github_url/pyenv.git" "$pyenv_home"
+lib/git-clone "$0" "$github_url/pyenv-doctor.git" "$pyenv_home/plugins/pyenv-doctor"
+lib/git-clone "$0" "$github_url/pyenv-installer.git" "$pyenv_home/plugins/pyenv-installer"
+lib/git-clone "$0" "$github_url/pyenv-update.git" "$pyenv_home/plugins/pyenv-update"
+lib/git-clone "$0" "$github_url/pyenv-virtualenv.git" "$pyenv_home/plugins/pyenv-virtualenv"
+lib/git-clone "$0" "$github_url/pyenv-which-ext.git" "$pyenv_home/plugins/pyenv-which-ext"
+
+python2_latest_version="$("$pyenv_exec" install --list | sed 's|^ *||g' | grep -E '^2.([0-9]+).([0-9]+)$' | sort -V | tail -n 1)"
+python3_latest_version="$("$pyenv_exec" install --list | sed 's|^ *||g' | grep -E '^3.([0-9]+).([0-9]+)$' | sort -V | tail -n 1)"
+
+exe/cmd "$SUBCHANNEL_EXEC" "$0" "\"$pyenv_exec\" install \"$python2_latest_version\""
+exe/cmd "$SUBCHANNEL_TEST" "$0" "if \"$pyenv_exec\" versions | grep -q \"$python2_latest_version\" ; then echo 'Python version \"$python2_latest_version\" for pyenv was installed successfully.' ; exit 0 ; else echo 'Python version \"$python2_latest_version\" for pyenv was not installed.' ; exit 1 ; fi"
+
+exe/cmd "$SUBCHANNEL_EXEC" "$0" "\"$pyenv_exec\" install \"$python3_latest_version\""
+exe/cmd "$SUBCHANNEL_TEST" "$0" "if \"$pyenv_exec\" versions | grep -q \"$python3_latest_version\" ; then echo 'Python version \"$python3_latest_version\" for pyenv was installed successfully.' ; exit 0 ; else echo 'Python version \"$python3_latest_version\" for pyenv was not installed.' ; exit 1 ; fi"
+
+exe/cmd "$SUBCHANNEL_EXEC" "$0" "\"$pyenv_exec\" global \"$python3_latest_version\""
+exe/cmd "$SUBCHANNEL_TEST" "$0" "if [ \"$("$pyenv_exec" global)\" = \"$python3_latest_version\" ] ; then echo 'Python version \"$python3_latest_version\" for pyenv was set as global successfully.' ; exit 0 ; else echo 'Python version \"$python3_latest_version\" for pyenv was not set as global.' ; exit 1 ; fi"

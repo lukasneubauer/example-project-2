@@ -1,0 +1,23 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+while true ; do
+    printf 'Enter password for sudo: '
+    stty -echo
+    read -r sudo_password
+    stty echo
+    sudo -k
+    echo "$sudo_password" | sudo -p '' -S echo '' > /dev/null 2>&1
+    if [ "$?" -eq 0 ] ; then
+        echo 'OK'
+        echo "SUDO_PASSWORD=$sudo_password" > .env.sudo.local
+        exit 0
+    else
+        exit 1
+    fi
+done

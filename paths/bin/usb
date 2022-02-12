@@ -1,0 +1,113 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+sudo_login()
+{
+    while true ; do
+        printf 'Enter password for sudo: '
+        stty -echo
+        read -r sudo_password
+        stty echo
+        sudo -k
+        echo "$sudo_password" | sudo -p '' -S echo '' > /dev/null 2>&1
+        if [ "$?" -eq 0 ] ; then
+            echo 'OK'
+            break
+        else
+            exit
+        fi
+    done
+}
+
+create_sums()
+{
+    source="$1"
+    shasum="$2"
+
+    find "$source" -type f -not '(' -path "$source/$shasum" -o -path '*/\.env.local' -o -path '*/\.env.sudo.local' -o -path '*/\.env.test.local' -o -path '*/\.git/*' ')' -prune -exec sh -c "sha512sum '{}' | sed \"s|$source/||g\"" ';' > "$source/$shasum"
+}
+
+create_info()
+{
+    source="$1"
+    gitsha="$2"
+    gitmsg="$3"
+    gitlog="$4"
+
+    git -C "$source" log --pretty=format:'%h' -n 1 > "$source/$gitsha"
+    git -C "$source" log --pretty=format:'%s' -n 1 > "$source/$gitmsg"
+    git -C "$source" log --pretty=oneline --abbrev-commit --graph --no-color --no-decorate > "$source/$gitlog"
+}
+
+create_copy()
+{
+    source="$1"
+    target="$2/OS"
+    shasum="$3"
+    gitsha="$4"
+    gitmsg="$5"
+    gitlog="$6"
+    curdir="$PWD"
+
+    cd "$source" || return 1
+    sudo -k && printf "%s" "$sudo_password" | sudo -p '' -S sh -c "rsync -l -r -R --exclude='.env.local' --exclude='.env.sudo.local' --exclude='.env.test.local' --exclude='.git' . \"$target\""
+    rm "$shasum" "$gitsha" "$gitmsg" "$gitlog"
+    cd "$curdir" || return 1
+}
+
+start()
+{
+    source="$1"
+    target="$2"
+
+    if [ "$source" = '' ] ; then
+        echo
+        1>&2 echo 'Error: Please, specify source directory.'
+        exit 1
+    fi
+
+    if ! [ -d "$source" ] ; then
+        echo
+        1>&2 echo 'Error: Directory which you have specified cannot be found.'
+        1>&2 echo '       Please, make sure that you have specified the source directory as first argument and the target directory as second argument.'
+        exit 1
+    fi
+
+    if [ "$target" = '' ] ; then
+        echo
+        1>&2 echo 'Error: Please, specify target directory.'
+        exit 1
+    fi
+
+    if ! [ -d "$target" ] ; then
+        echo
+        1>&2 echo 'Error: Directory which you have specified cannot be found.'
+        1>&2 echo '       Please, make sure that you have specified the source directory as first argument and the target directory as second argument.'
+        exit 1
+    fi
+
+    if [ "$(ls -A "$target")" != '' ] ; then
+        echo
+        1>&2 echo 'Error: Directory which you have specified as target is not empty.'
+        1>&2 echo '       Please, make sure that you have specified directory which is empty.'
+        exit 1
+    fi
+
+    shasum='SHA512SUM.txt'
+    gitsha='GIT-SHA.txt'
+    gitmsg='GIT-MSG.txt'
+    gitlog='GIT-LOG.txt'
+
+    create_sums "$source" "$shasum"
+    create_info "$source" "$gitsha" "$gitmsg" "$gitlog"
+    create_copy "$source" "$target" "$shasum" "$gitsha" "$gitmsg" "$gitlog"
+}
+
+sudo_login
+
+start "$1" "$2"

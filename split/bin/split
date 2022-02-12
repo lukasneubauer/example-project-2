@@ -1,0 +1,106 @@
+#!/bin/sh
+
+split()
+{
+    if [ "$(git status -s | wc -l)" -ne 0 ] ; then
+        echo 'Error: Stage is not empty.'
+        exit 1
+    fi
+
+    remote="$1"
+    module="$2"
+
+    if ! git remote show "$remote" > /dev/null 2>&1 ; then
+        echo "Error: Remote $remote does not exist."
+        exit 1
+    fi
+
+    current_branch="$(git branch | grep '^\*' | cut -d ' ' -f 2)"
+    tmp_branch="tmp-branch-$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 5 | head -n 1)"
+
+    git checkout -b "$tmp_branch"
+    FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --subdirectory-filter "$module"
+    git push -f "$remote" "$tmp_branch:$current_branch"
+    git checkout "$current_branch"
+    git branch -D "$tmp_branch"
+    git update-ref -d "refs/original/refs/heads/$tmp_branch"
+}
+
+run()
+{
+    if [ "$1" = '-h' ] || [ "$1" = '--help' ] ; then
+        echo "Usage: $0 [options]"
+        echo
+        echo 'Options:'
+        echo '  -h, --help                  Display this help message'
+        echo '  -r, --remote <remote-name>  Remote name'
+        echo '  -m, --module <module-path>  Module path, i.e. path to directory with the module'
+        exit 0
+    else
+        remote=''
+        module=''
+        until [ "$#" -eq 0 ] ; do
+            case "$1" in
+                -h|--help)
+                    shift 1
+                    continue
+                    ;;
+                -r|--remote|--remote=*)
+                    if echo "$1" | grep -q '^--remote=' ; then
+                        k="$(echo "$1" | cut -d '=' -f 1)"
+                        v="$(echo "$1" | cut -d '=' -f 2)"
+                        shift 1
+                    else
+                        k="$1"
+                        v="$2"
+                        shift 2
+                    fi
+                    error_massage="Error: Option $k requires you to provide name of the remote."
+                    if [ "$v" = '' ] ; then
+                        1>&2 echo "$error_massage"
+                        exit 1
+                    fi
+                    remote="$v"
+                    continue
+                    ;;
+                -m|--module|--module=*)
+                    if echo "$1" | grep -q '^--module=' ; then
+                        k="$(echo "$1" | cut -d '=' -f 1)"
+                        v="$(echo "$1" | cut -d '=' -f 2)"
+                        shift 1
+                    else
+                        k="$1"
+                        v="$2"
+                        shift 2
+                    fi
+                    error_massage="Error: Option $k requires you to provide path to the module."
+                    if [ "$v" = '' ] ; then
+                        1>&2 echo "$error_massage"
+                        exit 1
+                    fi
+                    module="$v"
+                    continue
+                    ;;
+                *)
+                    if echo "$1" | grep -q '=' ; then
+                        k="$(echo "$1" | cut -d '=' -f 1)"
+                    else
+                        k="$1"
+                    fi
+                    1>&2 echo "Error: Option $k is not defined."
+                    exit 1
+                    ;;
+            esac
+        done
+
+        if [ "$remote" = '' ] || [ "$module" = '' ] ; then
+            1>&2 echo 'Error: Both -r and -m options are mandatory.'
+            exit 1
+        else
+            split "$remote" "$module"
+            exit 0
+        fi
+    fi
+}
+
+run "$@"

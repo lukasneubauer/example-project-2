@@ -1,0 +1,12 @@
+#!/bin/sh
+
+spaces_to_dashes()
+{
+    echo "$1" | sed 's/ /-/g'
+}
+
+if [ "$*" != '' ] ; then
+    spaces_to_dashes "$*"
+else
+    spaces_to_dashes "$(cat -)"
+fi

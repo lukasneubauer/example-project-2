@@ -1,0 +1,15 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+arch="$2"
+dest="$3"
+
+exe/cmd "$SUBCHANNEL_EXEC" "$call_trace -> $0" "tar -f \"$arch\" -C \"$dest\" -x -j --totals"
+
+exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if ls -A \"$dest\" > /dev/null ; then echo \"Archive \\\"$arch\\\" was unpacked successfully.\" ; exit 0 ; else echo \"Archive \\\"$arch\\\" was not unpacked.\" ; exit 1 ; fi"

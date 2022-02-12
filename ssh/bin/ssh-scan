@@ -1,0 +1,13 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+
+while read -r host ; do
+    exe/cmd "$SUBCHANNEL_EXEC" "$call_trace -> $0" "ssh-keyscan -H \"$host\" >> \"$KNOWN_HOSTS_FILE\""
+done < "$root_dir/ssh/config/hosts.conf"

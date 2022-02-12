@@ -1,0 +1,43 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+desktop_file_name="$2"
+app_name="$3"
+app_comment="$4"
+app_exec="$5"
+app_icon="$6"
+app_terminal="$7"
+
+desktop_file_content="[Desktop Entry]
+Version=1.0
+Type=Application
+Name=$app_name
+Comment=$app_comment
+Exec=$app_exec
+Icon=$app_icon
+Path=
+Terminal=$app_terminal
+StartupNotify=false"
+
+plugin_ids="$(xfconf-query -c xfce4-panel -p /panels/panel-1/plugin-ids | sed '1,2d' | sort -n | tr "\n" ' ' | sed 's/\ *$//g')"
+
+last_plugin_id="$(echo "$plugin_ids" | rev | cut -d ' ' -f 1 | rev)"
+next_plugin_id="$((last_plugin_id + 1))"
+
+desktop_file_path="$HOME_DIR/.config/xfce4/panel/launcher-$next_plugin_id"
+
+lib/mkdir "$call_trace -> $0" "$desktop_file_path"
+lib/fwrite-multiline "$call_trace -> $0" "$desktop_file_content" "$desktop_file_path/$desktop_file_name"
+
+xfce/lib/xfconf-query-xfce4-panel-string "$call_trace -> $0" "/plugins/plugin-$next_plugin_id" 'launcher'
+xfce/lib/xfconf-query-xfce4-panel-string-array "$call_trace -> $0" "/plugins/plugin-$next_plugin_id/items" "$desktop_file_name"
+
+exe/cmd "$SUBCHANNEL_EXEC" "$call_trace -> $0" 'xfconf-query -c xfce4-panel -p /panels/panel-1/plugin-ids -R -r -v'
+
+xfce/lib/xfconf-query-xfce4-panel-int-array "$call_trace -> $0" '/panels/panel-1/plugin-ids' "$plugin_ids $next_plugin_id"

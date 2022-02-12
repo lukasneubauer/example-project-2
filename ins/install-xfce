@@ -1,0 +1,11 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+xfce/ins/install-thunar
+xfce/ins/install-xfce4-desktop
+xfce/ins/install-xfce4-panel

@@ -1,0 +1,95 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+remove_directories()
+{
+    lib/rm "$0" "$HOME_DIR/Documents"
+    lib/rm "$0" "$HOME_DIR/Music"
+    lib/rm "$0" "$HOME_DIR/Pictures"
+    lib/rm "$0" "$HOME_DIR/Videos"
+    lib/rm "$0" "$HOME_DIR/Downloads"
+}
+
+create_symlinks()
+{
+    directories='Distros
+Documents
+Downloads
+MEGA
+Music
+Pictures
+TORRENTS
+VBOX
+Videos
+VirtualBox VMs'
+
+    lsblk -n -r -o PATH | grep -E '/dev/sd[a-z]+[0-9]+' | while read -r device ; do
+        directory="$(lsblk -n -r -o MOUNTPOINT "$device")"
+        if [ "$directory" = '/' ] ; then
+            continue
+        fi
+
+        size_unit="$(lsblk -n -r -o SIZE "$device" | rev | cut -c 1)"
+        if [ "$size_unit" = 'B' ] ; then
+            continue
+        fi
+        if [ "$size_unit" = 'K' ] ; then
+            continue
+        fi
+        if [ "$size_unit" = 'M' ] ; then
+            continue
+        fi
+
+        removable="$(lsblk -n -r -o RM "$device")"
+        if [ "$removable" = '1' ] ; then
+            continue
+        fi
+
+        uuid="$(blkid "$device" | grep -o 'UUID=".*"' | cut -d '"' -f 2)"
+        dest="/mnt/$uuid"
+
+        lib/mkdir-sudo "$0" "$dest"
+        lib/mount "$0" "$device" "$dest"
+
+        old_ifs="$IFS"
+        IFS='
+'
+        for directory in $directories ; do
+            content="$dest/$directory"
+            symlink="$HOME_DIR/$directory"
+            if [ -d "$content" ] ; then
+                lib/ln "$0" "$content" "$symlink"
+            fi
+        done
+        IFS="$old_ifs"
+
+        lib/umount "$0" "$device"
+        lib/rm-sudo "$0" "$dest"
+    done
+}
+
+create_bookmarks()
+{
+    bookmarks_file="$HOME_DIR/.config/gtk-3.0/bookmarks"
+
+    lib/rm "$0" "$bookmarks_file"
+
+    bookmarks="file://$HOME_DIR/Documents
+file://$HOME_DIR/Music
+file://$HOME_DIR/Pictures
+file://$HOME_DIR/Videos
+file://$HOME_DIR/Downloads"
+
+    lib/fwrite-multiline "$0" "$bookmarks" "$HOME_DIR/.config/gtk-3.0/bookmarks"
+}
+
+remove_directories
+create_symlinks
+create_bookmarks

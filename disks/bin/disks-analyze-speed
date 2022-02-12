@@ -1,0 +1,130 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+sudo_login()
+{
+    while true ; do
+        printf 'Enter password for sudo: '
+        stty -echo
+        read -r sudo_password
+        stty echo
+        sudo -k
+        echo "$sudo_password" | sudo -p '' -S echo '' > /dev/null 2>&1
+        if [ "$?" -eq 0 ] ; then
+            echo 'OK'
+            break
+        else
+            exit
+        fi
+    done
+}
+
+sudo_exec()
+{
+    sudo -k && printf "%s" "$sudo_password" | sudo -p '' -S sh -c "$1" 2>&1
+}
+
+repeat()
+{
+    repetitions="$1"
+    cmd="$(echo "$*" | cut -d ' ' -f 2-)"
+    for _ in $(seq 1 "$repetitions") ; do
+        eval "$cmd"
+    done
+}
+
+test_r()
+{
+    test="$1"
+    sudo_exec 'sync'
+    sudo_exec '/sbin/sysctl -w vm.drop_caches=3 > /dev/null'
+    sudo_exec "dd if=\"$test\" of=/dev/null bs=1M count=1024 2>&1 | tail -n 1 | cut -d ' ' -f 10 | sed 's|,|.|g'"
+}
+
+test_w()
+{
+    test="$1"
+    sudo_exec 'sync'
+    sudo_exec '/sbin/sysctl -w vm.drop_caches=3 > /dev/null'
+    sudo_exec "dd if=/dev/zero of=\"$test\" bs=1M count=1024 2>&1 | tail -n 1 | cut -d ' ' -f 10 | sed 's|,|.|g'"
+}
+
+test_r_repeat()
+{
+    repeat "$1" test_r "$2" | xargs | sed 's/ /+/g'
+}
+
+test_w_repeat()
+{
+    repeat "$1" test_w "$2" | xargs | sed 's/ /+/g'
+}
+
+start()
+{
+    loop="$1"
+    dest="$2"
+    file="$3"
+    name="$4"
+    save="$5"
+    test="$dest/$file"
+    dump="$save/$name.speed"
+    sudo_exec "touch \"$test\""
+    w="$(echo "scale = 0 ; ($(test_w_repeat "$loop" "$test")) / $loop" | bc -l)" # this has to run first
+    r="$(echo "scale = 0 ; ($(test_r_repeat "$loop" "$test")) / $loop" | bc -l)"
+    echo "$r:$w" > "$dump"
+    sudo_exec "rm -f \"$test\""
+}
+
+check()
+{
+    loop="$1"
+    if [ "$loop" = '' ] ; then
+        echo
+        1>&2 echo 'Error: Please, make sure that you have specified number of cycles as 1st parameter,'
+        1>&2 echo '       i.e.: number of repeated runs the test will be performed, e.g.: 5, 10, 25...'
+        exit 1
+    fi
+    dest="$2"
+    if [ "$dest" = '' ] ; then
+        echo
+        1>&2 echo 'Error: Please, make sure that you have specified target directory as 2nd parameter,'
+        1>&2 echo '       i.e.: directory on disk which will be subject to the test and in which the temporary test file will be created.'
+        exit 1
+    fi
+    file="$3"
+    if [ "$file" = '' ] ; then
+        echo
+        1>&2 echo 'Error: Please, make sure that you have specified target test file as 3rd parameter,'
+        1>&2 echo '       i.e.: name of the temporary test file that will be used for reads and writes during the test, e.g.: speed-test.'
+        exit 1
+    fi
+    name="$4"
+    if [ "$name" = '' ] ; then
+        echo
+        1>&2 echo 'Error: Please, make sure that you have specified name of the disk as 4th parameter,'
+        1>&2 echo '       i.e.: unique identifier of the disk under test, e.g.: its serial code.'
+        exit 1
+    fi
+    save="$5"
+    if [ "$save" = '' ] ; then
+        echo
+        1>&2 echo 'Error: Please, make sure that you have specified result directory as 5th parameter,'
+        1>&2 echo '       i.e.: directory in which the results of the test will be stored.'
+        exit 1
+    fi
+    if ! [ -d "$dest" ] ; then
+        echo
+        1>&2 echo 'Error: Please, make sure that the target directory for tests is mounted and exists.'
+        exit 1
+    fi
+    start "$loop" "$dest" "$file" "$name" "$save"
+}
+
+sudo_login
+
+check "$1" "$2" "$3" "$4" "$5"

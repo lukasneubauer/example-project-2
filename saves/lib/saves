@@ -1,0 +1,370 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+config=''
+backup=0
+suffix=''
+revert=0
+dry_run=0
+
+show_help()
+{
+    echo "Usage: $0 [options]"
+    echo
+    echo 'Options:'
+    echo '  -h, --help             Display this help message'
+    echo '  -c, --config <config>  Specify configuration file which to use'
+    echo '  -b, --backup           Create save game backup'
+    echo '  -s, --suffix <suffix>  When creating save game backup add suffix to it (it must not contain spaces)'
+    echo '  -r, --revert           Revert save game backup'
+    echo '  -d, --dry-run          Only print but do not actually run'
+}
+
+gaps()
+{
+    number="$1"
+    spaces=''
+    space=' '
+    for _ in $(seq 1 "$number") ; do
+        spaces="${spaces}${space}"
+    done
+    printf "%s" "$spaces"
+}
+
+rows_count()
+{
+    rows=0
+    while read -r line ; do
+        if echo "$line" | grep -q '^#' ; then
+            continue
+        fi
+        rows="$((rows + 1))"
+    done < "$config"
+    echo "$rows"
+}
+
+line_number()
+{
+    grep -n -F "$1" "$config" | cut -d ':' -f 1
+}
+
+show_selection()
+{
+    step=1
+    text=''
+    rows="$(rows_count)"
+    while read -r line ; do
+        if echo "$line" | grep -q '^#' ; then
+            continue
+        fi
+        if [ "$(echo "$line" | grep -o ';' | grep -c ';')" -ne 2 ] ; then
+            echo 'Error: Each line in configuration file has to contain only 2 semicolon characters (;) as a delimiter by which the line is split.'
+            echo "       The malformed line is line number $(line_number "$line"), see bellow:"
+            echo "       $line"
+            return 1
+        fi
+        game="$(echo "$line" | cut -d ';' -f 1)"
+        step_bytes="${#step}"
+        rows_bytes="${#rows}"
+        gaps="$(gaps "$((rows_bytes - step_bytes))")"
+        text="${text}${gaps}${step}. ${game}"
+        if [ "$step" -lt "$rows" ] ; then
+            text="$text\n"
+        fi
+        step="$((step + 1))"
+    done < "$config"
+    printf "$text"
+}
+
+obtain_backup_path()
+{
+    target="$1"
+    suffix="$2"
+    timestamp="$(date +%Y-%m-%d-%H-%M-%S)"
+    echo "${target}/${timestamp}${suffix}"
+}
+
+flip()
+{
+    old_ifs="$IFS"
+    IFS='
+'
+    inputs="$(cat -)"
+    for string in $inputs ; do
+        length="${#string}"
+        result=''
+        number=1
+        until [ "$length" -eq 0 ] ; do
+            result="$(echo "$string" | cut -c "$number")$result"
+            number="$((number + 1))"
+            length="$((length - 1))"
+        done
+        echo "$result"
+    done
+    IFS="$old_ifs"
+}
+
+create_backup()
+{
+    backup="$1"
+    save="$2"
+    output="$3"
+    mkdir -p "$backup"
+    cp -r "$save" "$backup"
+    echo "$output"
+}
+
+create_revert()
+{
+    backup="$1"
+    save="$2"
+    output="$3"
+    rm -fr "$save"
+    cp -r "$backup" "$save"
+    echo "$output"
+}
+
+backup_list()
+{
+    backups_array="$1"
+    backups_total="$2"
+    step=1
+    text=''
+    for backup in $backups_array ; do
+        step_bytes="${#step}"
+        rows_bytes="${#backups_total}"
+        gaps="$(gaps "$((rows_bytes - step_bytes))")"
+        text="${text}${gaps}${step}. ${backup}"
+        if [ "$step" -lt "$backups_total" ] ; then
+            text="$text\n"
+        fi
+        step="$((step + 1))"
+    done
+    printf "$text"
+}
+
+config_line()
+{
+    sed -n "$((${1} + 1))p" "$config"
+}
+
+suffix()
+{
+    if [ -n "$1" ] ; then
+        echo "-$1"
+    fi
+}
+
+backup()
+{
+    suffix="$(suffix "$1")"
+
+    list_of_games="$(show_selection)"
+    if echo "$list_of_games" | head -n 1 | grep -q '^Error' ; then
+        1>&2 echo "$list_of_games"
+        exit 1
+    fi
+
+    printf 'Select number of the game which saves you want to backup:\n%s\n> ' "$list_of_games"
+    read -r number
+
+    if echo "$number" | grep -q -v '^[1-9][0-9]*$' || test "$number" -gt "$(rows_count)" ; then
+        1>&2 echo 'Error: Incorrect game number.'
+        exit 1
+    fi
+
+    line="$(config_line "$number")"
+
+    save_path="$(echo "$line" | cut -d ';' -f 2)"
+    if ! [ -d "$save_path" ] ; then
+        1>&2 echo 'Error: No saves found.'
+        exit 1
+    fi
+
+    save="$(realpath "$save_path")"
+
+    backup_path="$(realpath "$(echo "$line" | cut -d ';' -f 3)")"
+    backup="$(realpath "$(obtain_backup_path "$backup_path" "$suffix")")"
+
+    target="$(echo "$save" | flip | cut -d '/' -f 1 | flip)"
+    output="Created backup of '$save' as '$backup/$target'."
+    if [ "$dry_run" -eq 1 ] ; then
+        echo "Dry run: $output"
+    else
+        create_backup "$backup" "$save" "$output"
+    fi
+}
+
+revert()
+{
+    list_of_games="$(show_selection)"
+    if echo "$list_of_games" | head -n 1 | grep -q '^Error' ; then
+        1>&2 echo "$list_of_games"
+        exit 1
+    fi
+
+    printf 'Select number of the game which saves you want to revert:\n%s\n> ' "$list_of_games"
+    read -r number
+
+    if echo "$number" | grep -q -v '^[1-9][0-9]*$' || test "$number" -gt "$(rows_count)" ; then
+        1>&2 echo 'Error: Incorrect game number.'
+        exit 1
+    fi
+
+    line="$(config_line "$number")"
+
+    backup_path="$(echo "$line" | cut -d ';' -f 3)"
+    if ! [ -d "$backup_path" ] ; then
+        1>&2 echo 'Error: No backups found.'
+        exit 1
+    fi
+
+    save="$(realpath "$(echo "$line" | cut -d ';' -f 2)")"
+    backup_path_real="$(realpath "$backup_path")"
+
+    backup_list="$(find "$backup_path_real" -mindepth 1 -maxdepth 1 -type d | flip | cut -d '/' -f 1 | flip | sort)"
+    if [ -z "$backup_list" ] ; then
+        1>&2 echo 'Error: No backups found.'
+        exit 1
+    fi
+
+    backup_total="$(echo "$backup_list" | wc -l)"
+    backup_array="$(backup_list "$backup_list" "$backup_total")"
+
+    printf 'Select number of backup which you want to use:\n%s\n> ' "$backup_array"
+    read -r backup_number
+
+    if [ "$backup_number" -le 0 ] || [ "$backup_number" -gt "$backup_total" ] ; then
+        1>&2 echo 'Error: Incorrect backup number.'
+        exit 1
+    fi
+
+    target="$(echo "$backup_list" | sed -n "${backup_number}p")"
+    backup="$(realpath "$backup_path_real/$target/$(ls "$backup_path_real/$target")")"
+
+    output="Reverted backup '$backup' as '$save'."
+    if [ "$dry_run" -eq 1 ] ; then
+        echo "Dry run: $output"
+    else
+        create_revert "$backup" "$save" "$output"
+    fi
+}
+
+run()
+{
+    if [ "$#" -eq 0 ] ; then
+        show_help
+    else
+        until [ "$#" -eq 0 ] ; do
+            case "$1" in
+                -h|--help)
+                    show_help
+                    exit 0
+                    ;;
+                -c|--config|--config=*)
+                    if echo "$1" | grep -q '^--config=' ; then
+                        k="$(echo "$1" | cut -d '=' -f 1)"
+                        v="$(echo "$1" | cut -d '=' -f 2)"
+                        if [ -z "$v" ] ; then
+                            1>&2 echo 'Error: Option -c needs value.'
+                            exit 1
+                        fi
+                        shift 1
+                    else
+                        k="$1"
+                        v="$2"
+                        if [ -z "$v" ] ; then
+                            1>&2 echo 'Error: Option -c needs value.'
+                            exit 1
+                        fi
+                        shift 2
+                    fi
+                    config="$v"
+                    continue
+                    ;;
+                -b|--backup)
+                    backup=1
+                    shift 1
+                    continue
+                    ;;
+                -s|--suffix|--suffix=*)
+                    if echo "$1" | grep -q '^--suffix=' ; then
+                        k="$(echo "$1" | cut -d '=' -f 1)"
+                        v="$(echo "$1" | cut -d '=' -f 2)"
+                        if [ -z "$v" ] ; then
+                            1>&2 echo 'Error: Option -s needs value.'
+                            exit 1
+                        fi
+                        shift 1
+                    else
+                        k="$1"
+                        v="$2"
+                        if [ -z "$v" ] ; then
+                            1>&2 echo 'Error: Option -s needs value.'
+                            exit 1
+                        fi
+                        shift 2
+                    fi
+                    suffix="$v"
+                    continue
+                    ;;
+                -r|--revert)
+                    revert=1
+                    shift 1
+                    continue
+                    ;;
+                -d|--dry-run)
+                    dry_run=1
+                    shift 1
+                    continue
+                    ;;
+                *)
+                    if echo "$1" | grep -q '=' ; then
+                        k="$(echo "$1" | cut -d '=' -f 1)"
+                    else
+                        k="$1"
+                    fi
+                    1>&2 echo "Error: Option $k is not defined."
+                    exit 1
+                    ;;
+            esac
+        done
+
+        if [ -z "$config" ] ; then
+            1>&2 echo 'Error: Please, specify configuration file using the -c option.'
+            exit 1
+        fi
+
+        if [ -n "$suffix" ] && [ "$revert" -eq 1 ] ; then
+            1>&2 echo 'Error: Option -s cannot be used together with option -r.'
+            exit 1
+        fi
+
+        if [ -n "$config" ] && [ "$backup" -eq 0 ] && [ "$revert" -eq 0 ] ; then
+            1>&2 echo 'Error: Please, specify either the -b or -r option.'
+            exit 1
+        fi
+
+        if [ "$backup" -eq 1 ] && [ "$revert" -eq 1 ] ; then
+            1>&2 echo 'Error: Cannot use both -b and -r options together.'
+            exit 1
+        fi
+
+        if [ "$backup" -eq 1 ] ; then
+            backup "$suffix"
+            exit 0
+        fi
+
+        if [ "$revert" -eq 1 ] ; then
+            revert
+            exit 0
+        fi
+    fi
+}
+
+run "$@"

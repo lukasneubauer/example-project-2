@@ -1,0 +1,25 @@
+#!/bin/sh
+
+test_dir="$PWD"
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+eval "$(exe/print-vars 'envs.test.conf')"
+
+cd "$test_dir" || exit 1
+
+test_dashes_to_spaces()
+{
+    ${_ASSERT_SAME_} '"Lorem ipsum dolor sit amet"' '"$("$root_dir/paths/bin/dashes-to-spaces" "Lorem-ipsum-dolor-sit-amet")"'
+}
+
+test_spaces_to_dashes()
+{
+    ${_ASSERT_SAME_} '"Lorem-ipsum-dolor-sit-amet"' '"$("$root_dir/paths/bin/spaces-to-dashes" "Lorem ipsum dolor sit amet")"'
+}
+
+. "$(command -v shunit2)"

@@ -1,0 +1,11 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+
+xfce/bin/xfce4-panel-launcher "$call_trace -> $0" 'phpstorm-2019.2.desktop' 'PhpStorm' 'The Lightning-Smart PHP IDE' "\"$OPT_DIR/PhpStorm-2019.2/bin/phpstorm.sh\" %f" "$OPT_DIR/PhpStorm-2019.2/bin/phpstorm.svg" 'false'

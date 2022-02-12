@@ -1,0 +1,20 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+ssh/bin/ssh-keys "$0"
+
+for repository in chatterbox-todos clean-distro-install cshh cshh_todos es twp_todos twp_website twp_wireframe vc-api vc-todos ; do
+    lib/git-clone "$0" "git@bitbucket.org:lneubauer/$repository.git" "$PROJECTS_DIR/$repository"
+    exe/cmd "$SUBCHANNEL_EXEC" "$0" "git -C \"$PROJECTS_DIR/$repository\" remote add backup \"git@gitlab.com:lukasneubauer/$repository.git\""
+    exe/cmd "$SUBCHANNEL_EXEC" "$0" "GIT_SSH_COMMAND=\"ssh -i $SSH_KEYS_DIR/id_rsa_git\" git -C \"$PROJECTS_DIR/$repository\" fetch backup"
+    exe/cmd "$SUBCHANNEL_TEST" "$0" "if git -C \"$PROJECTS_DIR/$repository\" remote -v | grep -E \"^backup(.+)git@gitlab.com:lukasneubauer/$repository.git\" ; then echo \"Remote \\\"backup\\\" was added successfully.\" ; exit 0 ; else echo \"Remote \\\"backup\\\" was not added.\" ; exit 1 ; fi"
+done
+
+ssh/bin/ssh-keys-remove "$0"

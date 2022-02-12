@@ -1,0 +1,25 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+ssh/bin/ssh-keys "$0"
+
+repository='operating-system'
+
+lib/git-clone "$0" "git@bitbucket.org:lneubauer/$repository.git" "$PROJECTS_DIR/$repository"
+exe/cmd "$SUBCHANNEL_EXEC" "$0" "git -C \"$PROJECTS_DIR/$repository\" remote add backup \"git@gitlab.com:lukasneubauer/$repository.git\""
+exe/cmd "$SUBCHANNEL_EXEC" "$0" "GIT_SSH_COMMAND=\"ssh -i $SSH_KEYS_DIR/id_rsa_git\" git -C \"$PROJECTS_DIR/$repository\" fetch backup"
+exe/cmd "$SUBCHANNEL_TEST" "$0" "if git -C \"$PROJECTS_DIR/$repository\" remote -v | grep -E \"^backup(.+)git@gitlab.com:lukasneubauer/$repository.git\" ; then echo \"Remote \\\"backup\\\" was added successfully.\" ; exit 0 ; else echo \"Remote \\\"backup\\\" was not added.\" ; exit 1 ; fi"
+
+if [ "$REPO_GIT_BRANCH" != 'master' ] ; then
+    exe/cmd "$SUBCHANNEL_EXEC" "$0" "git -C \"$PROJECTS_DIR/$repository\" checkout \"origin/$REPO_GIT_BRANCH\" -b \"$REPO_GIT_BRANCH\""
+    exe/cmd "$SUBCHANNEL_TEST" "$0" "if [ \"$(git -C "$PROJECTS_DIR/$repository" branch --show-current)\" = \"$REPO_GIT_BRANCH\" ] ; then echo \"Git branch was switched to \\\"$REPO_GIT_BRANCH\\\" successfully.\" ; exit 0 ; else echo \"Git branch was not switched to \\\"$REPO_GIT_BRANCH\\\".\" ; exit 1 ; fi"
+fi
+
+ssh/bin/ssh-keys-remove "$0"

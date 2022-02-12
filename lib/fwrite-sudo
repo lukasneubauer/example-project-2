@@ -1,0 +1,15 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+line="$2"
+file="$3"
+
+exe/cmd-sudo "$SUBCHANNEL_EXEC" "$call_trace -> $0" "echo \"$line\" >> \"$file\""
+
+exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if grep -q -F \"$line\" \"$file\" ; then echo \"Line \\\"$line\\\" was put into \\\"$file\\\" file successfully.\" ; exit 0 ; else echo \"Line \\\"$line\\\" was not put into \\\"$file\\\" file.\" ; exit 1 ; fi"

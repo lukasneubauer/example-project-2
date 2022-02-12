@@ -1,0 +1,14 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+lib/mkdir "$0" "$BIN_DIR"
+lib/mkdir "$0" "$OPT_DIR"
+lib/mkdir "$0" "$PROJECTS_DIR"
+lib/mkdir "$0" "$TMP_DIR"

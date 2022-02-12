@@ -1,0 +1,13 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+php_version="$1"
+
+while read -r ext ; do
+    deb/apt-get-install "$0" "php${php_version}-${ext}"
+done < "php/ext/php-${php_version}.txt"

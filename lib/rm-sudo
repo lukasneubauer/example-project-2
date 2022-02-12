@@ -1,0 +1,14 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+target="$2"
+
+exe/cmd-sudo "$SUBCHANNEL_EXEC" "$call_trace -> $0" "rm -f -r -v \"$target\""
+
+exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if ! [ -e \"$target\" ] ; then echo \"Target \\\"$target\\\" was deleted successfully.\" ; exit 0 ; else echo \"Target \\\"$target\\\" was not deleted.\" ; exit 1 ; fi"

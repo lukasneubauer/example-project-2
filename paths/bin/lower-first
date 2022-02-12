@@ -1,0 +1,12 @@
+#!/bin/sh
+
+lower_first()
+{
+    echo "$1" | sed 's/.*/\l&/g'
+}
+
+if [ "$*" != '' ] ; then
+    lower_first "$*"
+else
+    lower_first "$(cat -)"
+fi

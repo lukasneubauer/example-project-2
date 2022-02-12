@@ -1,0 +1,15 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+device="$2"
+target="$3"
+
+exe/cmd-sudo "$SUBCHANNEL_EXEC" "$call_trace -> $0" "mount -v \"$device\" \"$target\""
+
+exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if [ \"$(lsblk -n -r -o MOUNTPOINT "$device")\" = \"$target\" ] ; then echo \"Directory \\\"$target\\\" for device \\\"$device\\\" was mounted successfully.\" ; exit 0 ; else \"Directory \\\"$target\\\" for device \\\"$device\\\" was not mounted.\" ; exit 1 ; fi"

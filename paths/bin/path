@@ -1,0 +1,8 @@
+#!/bin/sh
+
+old_ifs="$IFS"
+IFS=':'
+for p in $PATH ; do
+    echo "$p"
+done
+IFS="$old_ifs"

@@ -1,0 +1,112 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+sudo_login()
+{
+    while true ; do
+        printf 'Enter password for sudo: '
+        stty -echo
+        read -r sudo_password
+        stty echo
+        sudo -k
+        echo "$sudo_password" | sudo -p '' -S echo '' > /dev/null 2>&1
+        if [ "$?" -eq 0 ] ; then
+            echo 'OK'
+            break
+        else
+            exit
+        fi
+    done
+}
+
+sudo_exec()
+{
+    sudo -k && printf "%s" "$sudo_password" | sudo -p '' -S sh -c "$1" 2>&1
+}
+
+block_size()
+{
+    disk="$1"
+    sudo_exec "blockdev --getbsz \"$disk\""
+}
+
+analyze_bad_blocks()
+{
+    block_size="$1"
+    block_file="$2"
+    disk="$3"
+    cmd_output="$4"
+    sudo_exec "badblocks -b \"$block_size\" -o \"$block_file\" -s -n \"$disk\" 2> \"$cmd_output\""
+}
+
+number_of_blocks_on_disk()
+{
+    disk="$1"
+    number_of_sectors_on_disk="$(sudo_exec "fdisk -l \"$disk\" | head -n 1 | tail -n 1 | cut -d ' ' -f 7")"
+    number_of_bytes_in_sector="$(sudo_exec "fdisk -l \"$disk\" | head -n 3 | tail -n 1 | cut -d ' ' -f 8")"
+    number_of_sectors_in_one_block="$((block_size / number_of_bytes_in_sector))"
+    echo "$((number_of_sectors_on_disk / number_of_sectors_in_one_block))"
+}
+
+start()
+{
+    disk="$1"
+    name="$2"
+    save="$3"
+    temp="$4"
+    block_size="$(block_size "$disk")"
+    block_file="$temp/$name.bad-blocks"
+    cmd_output="$temp/$name.command-output"
+    analyze_bad_blocks "$block_size" "$block_file" "$disk" "$cmd_output"
+    number_of_bad_blocks_on_disk="$(wc -l < "$block_file")"
+    dump="$save/$name.bad-blocks"
+    echo "$number_of_bad_blocks_on_disk:$(number_of_blocks_on_disk "$disk")" > "$dump"
+    sudo_exec "rm -f \"$cmd_output\""
+}
+
+check()
+{
+    disk="$1"
+    if [ "$disk" = '' ] ; then
+        echo
+        1>&2 echo 'Error: Please, make sure that you have specified device name of the disk as 1st parameter,'
+        1>&2 echo '       i.e.: name of the block device in operating system, e.g.: /dev/sda.'
+        exit 1
+    fi
+    name="$2"
+    if [ "$name" = '' ] ; then
+        echo
+        1>&2 echo 'Error: Please, make sure that you have specified serial code of the disk as 2nd parameter,'
+        1>&2 echo '       i.e.: unique identifier of the disk under test.'
+        exit 1
+    fi
+    save="$3"
+    if [ "$save" = '' ] ; then
+        echo
+        1>&2 echo 'Error: Please, make sure that you have specified result report directory as 3rd parameter,'
+        1>&2 echo '       i.e.: directory in which the results of the test will be stored.'
+        exit 1
+    fi
+    temp="$4"
+    if [ "$temp" = '' ] ; then
+        echo
+        1>&2 echo 'Error: Please, make sure that you have specified directory for junk data as 4th parameter,'
+        1>&2 echo '       i.e.: directory in which the output of testing commands will be stored, e.g.: /tmp.'
+        exit 1
+    fi
+    if [ "$(lsblk "$disk" -n -o MOUNTPOINT)" != '' ] ; then
+        echo
+        1>&2 echo 'Error: Please, make sure that partitions on device that you want to analyse are unmounted.'
+        exit 1
+    fi
+    start "$disk" "$name" "$save" "$temp"
+}
+
+sudo_login
+
+check "$1" "$2" "$3" "$4"

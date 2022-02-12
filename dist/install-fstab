@@ -1,0 +1,57 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+lsblk -n -r -o PATH | grep -E '/dev/sd[a-z]+[0-9]+' | while read -r device ; do
+    directory="$(lsblk -n -r -o MOUNTPOINT "$device")"
+    if [ "$directory" = '/' ] ; then
+        continue
+    fi
+
+    size_unit="$(lsblk -n -r -o SIZE "$device" | rev | cut -c 1)"
+    if [ "$size_unit" = 'B' ] ; then
+        continue
+    fi
+    if [ "$size_unit" = 'K' ] ; then
+        continue
+    fi
+    if [ "$size_unit" = 'M' ] ; then
+        continue
+    fi
+
+    removable="$(lsblk -n -r -o RM "$device")"
+    if [ "$removable" = '1' ] ; then
+        continue
+    fi
+
+    uuid="$(blkid "$device" | grep -o 'UUID=".*"' | cut -d '"' -f 2)"
+    dest="/media/$USER/$uuid"
+
+    lib/mkdir-sudo "$0" "$dest"
+    lib/mount "$0" "$device" "$dest"
+
+    name_file="$dest/LABEL_ENCODED"
+
+    if ! [ -f "$name_file" ] ; then
+        lib/umount "$0" "$device"
+        lib/rm-sudo "$0" "$dest"
+        continue
+    fi
+
+    name="$(cat "$name_file")"
+
+    if echo "$uuid" | grep -q '-' ; then
+        lib/fwrite-sudo "$0" "/dev/disk/by-uuid/$uuid /mnt/$uuid auto nosuid,nodev,nofail,x-gvfs-show,x-gvfs-name=$name 0 0" '/etc/fstab'
+    else
+        lib/fwrite-sudo "$0" "/dev/disk/by-uuid/$uuid /mnt/$uuid ntfs-3g rw,umask=0000,nosuid,nodev,nofail,x-gvfs-show,x-gvfs-name=$name 0 0" '/etc/fstab'
+    fi
+
+    lib/umount "$0" "$device"
+    lib/rm-sudo "$0" "$dest"
+done

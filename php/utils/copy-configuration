@@ -1,0 +1,13 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+php_version="$1"
+
+for sapi in apache2 cgi cli phpdbg ; do
+    lib/cp-sudo "$0" 'php/config/php.ini' "/etc/php/${php_version}/${sapi}/conf.d/00-php.ini"
+done

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+path="$2"
+dest="$3"
+
+lib/curl "$call_trace -> $0" "$path" "$dest"
+
+lib/chmod "$call_trace -> $0" '0775' "$dest"

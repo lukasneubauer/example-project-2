@@ -1,0 +1,116 @@
+#!/bin/sh
+
+config_file='.g3rc'
+
+others=''
+
+config()
+{
+    if ! [ -f "$config_file" ] ; then
+        1>&2 echo "Error: Configuration file was not found. Please, make sure to create configuration file named $config_file"
+        1>&2 echo '       and put your remotes to sync into it (make sure not to put origin into it because origin is'
+        1>&2 echo '       always synced and considered as upstream).'
+        exit 1
+    fi
+    while read -r line ; do
+        if echo "$line" | grep -q '^origin$' ; then
+            1>&2 echo "Error: Please, make sure not to put origin into the $config_file configuration file (origin is always synced and considered as upstream)."
+            exit 1
+        fi
+        if [ -z "$others" ] ; then
+            others="$line"
+        else
+            others="$others $line"
+        fi
+    done < "$config_file"
+}
+
+branch()
+{
+    git branch 2> /dev/null | grep '^\*' | cut -d ' ' -f 2
+}
+
+push_origin()
+{
+    git push -u 'origin' "$(branch)"
+}
+
+push_others()
+{
+    for remote in $others ; do
+        git push "$remote" "$(branch)"
+    done
+}
+
+push()
+{
+    push_origin
+    push_others
+}
+
+push_origin_force()
+{
+    git push -f -u 'origin' "$(branch)"
+}
+
+push_others_force()
+{
+    for remote in $others ; do
+        git push -f "$remote" "$(branch)"
+    done
+}
+
+push_force()
+{
+    push_origin_force
+    push_others_force
+}
+
+pull_origin()
+{
+    git pull 'origin' "$(branch)"
+}
+
+pull_others()
+{
+    for remote in $others ; do
+        git pull "$remote" "$(branch)"
+    done
+}
+
+pull()
+{
+    pull_origin
+    pull_others
+}
+
+help()
+{
+    echo "Usage: g3 [options]"
+    echo
+    echo 'Options:'
+    echo "  push     Push current branch's changes into origin and other remotes"
+    echo "  push -f  Push current branch's changes into origin and other remotes (using force push)"
+    echo "  pull     Pull current branch's changes from origin and other remotes"
+}
+
+config
+
+case "$*" in
+    'push')
+        push
+        exit 0
+        ;;
+    'push -f')
+        push_force
+        exit 0
+        ;;
+    'pull')
+        pull
+        exit 0
+        ;;
+    *)
+        help
+        exit 0
+        ;;
+esac

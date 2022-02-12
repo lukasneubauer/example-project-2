@@ -1,0 +1,15 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+program="$2"
+category="$3"
+
+exe/cmd-sudo "$SUBCHANNEL_EXEC" "$call_trace -> $0" "update-alternatives --set \"$category\" \"$program\""
+
+exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if update-alternatives --get-selections | grep \"^$category \" | grep -q \"$program$\" ; then echo \"Program \\\"$program\\\" was set as default successfully.\" ; exit 0 ; else echo \"Program \\\"$program\\\" was not set as default.\" ; exit 1 ; fi"

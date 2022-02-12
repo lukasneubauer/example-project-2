@@ -1,0 +1,15 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+php_version="$1"
+
+deb/apt-get-install "$0" "php${php_version}"
+php/utils/install-extensions "$php_version"
+deb/apt-get-install "$0" "libapache2-mod-php${php_version}"
+php/utils/copy-configuration "$php_version"
+lib/cp-sudo "$0" "php/xdebug/php-${php_version}-xdebug.ini" "/etc/php/${php_version}/mods-available/xdebug.ini"

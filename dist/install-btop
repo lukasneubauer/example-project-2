@@ -1,0 +1,21 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+github_url='https://github.com/aristocratos/btop'
+latest_url="$github_url/releases/latest"
+version="$(curl -fsLS -I -o /dev/null -w '%{url_effective}' "$latest_url" | cut -d 'v' -f 2)"
+download_url="${github_url}/releases/download/v${version}/btop-$(uname -m)-$(uname -s)-musl.tbz"
+btop_arch="$TMP_DIR/btop-$(uname -m)-$(uname -s)-musl.tbz"
+btop_dest="$OPT_DIR/btop"
+btop_exec="$btop_dest/bin/btop"
+
+lib/get-tar-bz-archive "$0" "$download_url" "$btop_arch" "$btop_dest"
+lib/chmod "$0" '0775' "$btop_exec"
+lib/ln "$0" "$btop_exec" "$BIN_DIR/btop"

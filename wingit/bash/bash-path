@@ -1,0 +1,4 @@
+#!/bin/sh
+
+saves_bin="$HOME/Projects/operating-system/saves/bin"
+PATH="$saves_bin:$PATH"

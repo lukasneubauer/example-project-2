@@ -1,0 +1,12 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+dist/install-home-directories
+dist/install-ssh
+dist/install-git-repositories-operating-system
+dist/install-dotfiles

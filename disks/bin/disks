@@ -1,0 +1,256 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+sudo_login()
+{
+    while true ; do
+        printf 'Enter password for sudo: '
+        stty -echo
+        read -r sudo_password
+        stty echo
+        sudo -k
+        echo "$sudo_password" | sudo -p '' -S echo '' > /dev/null 2>&1
+        if [ "$?" -eq 0 ] ; then
+            echo 'OK'
+            break
+        else
+            exit
+        fi
+    done
+}
+
+sudo_exec()
+{
+    sudo -k && printf "%s" "$sudo_password" | sudo -p '' -S sh -c "$1" 2>&1
+}
+
+years()
+{
+    hours="$1"
+    echo "$((hours / 24 / 365))"
+}
+
+months()
+{
+    hours="$1"
+    months="$((hours / 24 / 30))"
+    years="$(years "$hours")"
+    echo "$((months - years * 12))"
+}
+
+type()
+{
+    index="$1"
+    lsblk="$2"
+    removable="$(echo "$lsblk" | jq -r ".blockdevices[$index].rm")"
+    if [ "$removable" = 'true' ] ; then
+        echo 'USB'
+    else
+        hdd="$(echo "$lsblk" | jq -r ".blockdevices[$index].rota")"
+        if [ "$hdd" = 'true' ] ; then
+            echo 'HDD'
+        else
+            echo 'SSD'
+        fi
+    fi
+}
+
+family()
+{
+    smart="$1"
+    family="$(echo "$smart" | jq -r '.model_family')"
+    if [ "$family" = 'null' ] ; then
+        echo 'n/a'
+    else
+        echo "$family"
+    fi
+}
+
+name()
+{
+    index="$1"
+    lsblk="$2"
+    smart="$3"
+    type="$(type "$index" "$lsblk")"
+    if [ "$type" = 'USB' ] ; then
+        echo 'n/a'
+    else
+        echo "$smart" | jq -r '.model_name' | sed 's/  */ /g'
+    fi
+}
+
+serial()
+{
+    index="$1"
+    lsblk="$2"
+    smart="$3"
+    type="$(type "$index" "$lsblk")"
+    if [ "$type" = 'USB' ] ; then
+        echo 'n/a'
+    else
+        echo "$smart" | jq -r '.serial_number'
+    fi
+}
+
+model()
+{
+    index="$1"
+    lsblk="$2"
+    device="$3"
+    model="$(echo "$lsblk" | jq -r ".blockdevices[$index].model")"
+    if [ "$model" = '' ] ; then
+        sudo_exec "fdisk -l \"$device\" | grep 'Disk model' | cut -d ':' -f 2-"
+    else
+        echo "$model"
+    fi
+}
+
+size()
+{
+    index="$1"
+    lsblk="$2"
+    echo "$(echo "$lsblk" | jq -r ".blockdevices[$index].size")B"
+}
+
+read_speed()
+{
+    serial="$1"
+    model="$2"
+    path="$HOME/MEGA/MEGAsync Uploads/DISKS"
+    if [ -f "$path/$serial.speed" ] ; then
+        echo "$(cut -d ':' -f 1 < "$path/$serial.speed")MB/s"
+        return
+    fi
+    if [ -f "$path/$model.speed" ] ; then
+        echo "$(cut -d ':' -f 1 < "$path/$model.speed")MB/s"
+        return
+    fi
+    echo 'n/a'
+}
+
+write_speed()
+{
+    serial="$1"
+    model="$2"
+    path="$HOME/MEGA/MEGAsync Uploads/DISKS"
+    if [ -f "$path/$serial.speed" ] ; then
+        echo "$(cut -d ':' -f 2 < "$path/$serial.speed")MB/s"
+        return
+    fi
+    if [ -f "$path/$model.speed" ] ; then
+        echo "$(cut -d ':' -f 2 < "$path/$model.speed")MB/s"
+        return
+    fi
+    echo 'n/a'
+}
+
+bad_blocks()
+{
+    serial="$1"
+    model="$2"
+    if ! [ -f "/tmp/$serial.command-output" ] && ! [ -f "/tmp/$model.command-output" ] ; then
+        path="$HOME/MEGA/MEGAsync Uploads/DISKS"
+        if [ -f "$path/$serial.bad-blocks" ] ; then
+            bad_blocks="$(cut -d ':' -f 1 < "$path/$serial.bad-blocks")"
+            all_blocks="$(cut -d ':' -f 2 < "$path/$serial.bad-blocks")"
+            echo "$bad_blocks/$all_blocks"
+            return
+        fi
+        if [ -f "$path/$model.bad-blocks" ] ; then
+            bad_blocks="$(cut -d ':' -f 1 < "$path/$model.bad-blocks")"
+            all_blocks="$(cut -d ':' -f 2 < "$path/$model.bad-blocks")"
+            echo "$bad_blocks/$all_blocks"
+            return
+        fi
+        echo 'n/a'
+    else
+        if [ -f "/tmp/$serial.command-output" ] ; then
+            analysis_progress="$(grep ':' < "/tmp/$serial.command-output" | rev | cut -d '%' -f 2 | cut -d ' ' -f 1 | rev)"
+            echo "analysing: ${analysis_progress}% done"
+            return
+        fi
+        if [ -f "/tmp/$model.command-output" ] ; then
+            analysis_progress="$(grep ':' < "/tmp/$model.command-output" | rev | cut -d '%' -f 2 | cut -d ' ' -f 1 | rev)"
+            echo "analysing: ${analysis_progress}% done"
+            return
+        fi
+        echo 'n/a'
+    fi
+}
+
+time_on()
+{
+    index="$1"
+    lsblk="$2"
+    smart="$3"
+    type="$(type "$index" "$lsblk")"
+    if [ "$type" = 'USB' ] ; then
+        echo 'n/a'
+    else
+        hours="$(echo "$smart" | jq -r '.ata_smart_attributes.table[] | select(.name == "Power_On_Hours")' | jq -r '.raw.string' | cut -d ' ' -f 1)"
+        years="$(years "$hours")"
+        months="$(months "$hours")"
+        echo "$years year(s) $months month(s)"
+    fi
+}
+
+tbw()
+{
+    index="$1"
+    lsblk="$2"
+    smart="$3"
+    type="$(type "$index" "$lsblk")"
+    number_of_gib_in_one_tb=931
+    if [ "$type" = 'SSD' ] ; then
+        host_writes_gib="$(echo "$smart" | jq -r '.ata_smart_attributes.table[] | select(.name == "Host_Writes_GiB")' | jq -r '.raw.string' | cut -d ' ' -f 1)"
+        tbw_written="$((host_writes_gib / number_of_gib_in_one_tb))"
+        serial="$(serial "$index" "$lsblk" "$smart")"
+        line="$(grep "$serial" < config/tbw.conf)"
+        max_tbw="$(echo "$line" | cut -d ';' -f 2 | cut -d '=' -f 2)"
+        echo "$tbw_written out of $max_tbw TBW used"
+    else
+        echo 'n/a'
+    fi
+}
+
+disk()
+{
+    index="$1"
+    lsblk="$2"
+    device="$(echo "$lsblk" | jq -r ".blockdevices[$index].path")"
+    smart="$(sudo_exec "smartctl -a -j \"$device\"")"
+    echo "     Device: $device"
+    echo "       Type: $(type "$index" "$lsblk")"
+    echo "     Family: $(family "$smart")"
+    echo "       Name: $(name "$index" "$lsblk" "$smart")"
+    echo "     Serial: $(serial "$index" "$lsblk" "$smart")"
+    echo "      Model: $(model "$index" "$lsblk" "$device")"
+    echo "       Size: $(size "$index" "$lsblk")"
+    echo " Read speed: $(read_speed "$(serial "$index" "$lsblk" "$smart")" "$(model "$index" "$lsblk" "$device")")"
+    echo "Write speed: $(write_speed "$(serial "$index" "$lsblk" "$smart")" "$(model "$index" "$lsblk" "$device")")"
+    echo " Bad blocks: $(bad_blocks "$(serial "$index" "$lsblk" "$smart")" "$(model "$index" "$lsblk" "$device")")"
+    echo "    Time on: $(time_on "$index" "$lsblk" "$smart")"
+    echo "        TBW: $(tbw "$index" "$lsblk" "$smart")"
+}
+
+loop()
+{
+    lsblk="$(lsblk -J -O)"
+    count="$(echo "$lsblk" | jq -r '.blockdevices | length')"
+    last_index="$((count - 1))"
+    for index in $(seq 0 "$last_index") ; do
+        disk "$index" "$lsblk"
+        if [ "$index" -ne "$last_index" ] ; then
+            echo '--------------------------------------------------'
+        fi
+    done
+}
+
+sudo_login
+echo
+loop

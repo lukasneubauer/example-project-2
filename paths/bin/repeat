@@ -1,0 +1,8 @@
+#!/bin/sh
+
+repetitions="$1"
+cmd="$(echo "$*" | cut -d ' ' -f 2-)"
+
+for _ in $(seq 1 "$repetitions") ; do
+    eval "$cmd"
+done

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+upper()
+{
+    echo "$1" | tr '[:lower:]' '[:upper:]'
+}
+
+if [ "$*" != '' ] ; then
+    upper "$*"
+else
+    upper "$(cat -)"
+fi

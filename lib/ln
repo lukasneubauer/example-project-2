@@ -1,0 +1,15 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+target="$2"
+link="$3"
+
+exe/cmd "$SUBCHANNEL_EXEC" "$call_trace -> $0" "ln -s -v \"$target\" \"$link\""
+
+exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if [ -L \"$link\" ] && [ -e \"$link\" ] ; then echo \"Link \\\"$link\\\" was created successfully.\" ; exit 0 ; else echo \"Link \\\"$link\\\" was not created.\" ; exit 1 ; fi"

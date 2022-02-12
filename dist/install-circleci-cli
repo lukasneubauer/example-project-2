@@ -1,0 +1,22 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+github_url='https://github.com/CircleCI-Public/circleci-cli'
+latest_url="$github_url/releases/latest"
+version="$(curl -fsLS -I -o /dev/null -w '%{url_effective}' "$latest_url" | cut -d 'v' -f 2)"
+os="$(uname)"
+download_url="${github_url}/releases/download/v${version}/circleci-cli_${version}_${os}_amd64.tar.gz"
+circleci_cmd='circleci'
+circleci_cli_arch="$TMP_DIR/circleci-cli_${version}_${os}_amd64.tar.gz"
+circleci_cli_dest="$TMP_DIR/circleci-cli"
+
+lib/get-tar-gz-archive-strip-1 "$0" "$download_url" "$circleci_cli_arch" "$circleci_cli_dest"
+lib/cp "$0" "$circleci_cli_dest/$circleci_cmd" "$BIN_DIR/$circleci_cmd"
+lib/chmod "$0" '0775' "$BIN_DIR/$circleci_cmd"

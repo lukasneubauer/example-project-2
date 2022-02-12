@@ -1,0 +1,35 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+dist/install-home-directories
+dist/install-home-symlinks
+dist/install-packages
+dist/install-ssh
+dist/install-git-repositories-operating-system
+dist/install-dotfiles
+dist/install-git-repositories-remaining
+dist/install-btop
+dist/install-lamp
+dist/install-phars
+dist/install-defaults
+dist/install-python
+dist/install-pyenv
+dist/install-nodejs
+dist/install-circleci-cli
+dist/install-docker
+dist/install-docker-setup
+dist/install-woeusb
+dist/install-megasync
+dist/install-phpstorm-2019-2
+dist/install-phpstorm-2021-2
+dist/install-phpstorm-2021-3
+dist/install-postman
+dist/install-slack
+dist/install-virtual-box
+dist/install-wireshark
+dist/install-fstab

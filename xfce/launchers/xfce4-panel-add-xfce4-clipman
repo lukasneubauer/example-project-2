@@ -1,0 +1,11 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+
+xfce/bin/xfce4-panel-launcher "$call_trace -> $0" 'xfce4-clipman.desktop' 'Clipman' 'Clipboard manager' 'xfce4-clipman' 'xfce4-clipman-plugin' 'false'

@@ -1,0 +1,75 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+sudo_login()
+{
+    while true ; do
+        printf 'Enter password for sudo: '
+        stty -echo
+        read -r sudo_password
+        stty echo
+        sudo -k
+        echo "$sudo_password" | sudo -p '' -S echo '' > /dev/null 2>&1
+        if [ "$?" -eq 0 ] ; then
+            echo 'OK'
+            break
+        else
+            exit
+        fi
+    done
+}
+
+sudo_exec()
+{
+    sudo -k && printf "%s" "$sudo_password" | sudo -p '' -S sh -c "$1" 2>&1
+}
+
+start()
+{
+    name="$1"
+    dest="$2"
+
+    device_regex='/dev/sd[a-z]+[0-9]+'
+
+    if [ "$name" = '' ] ; then
+        echo
+        1>&2 echo 'Error: Please, specify label as first argument.'
+        exit 1
+    fi
+
+    if [ "$dest" = '' ] ; then
+        echo
+        1>&2 echo "Error: Please, specify either block device according to regex '$device_regex' or directory as second argument."
+        exit 1
+    fi
+
+    if ! [ -e "$dest" ] ; then
+        echo
+        1>&2 echo 'Error: Target (either block device or directory) which you have specified does not exist.'
+        exit 1
+    fi
+
+    name_encoded="$(echo "$name" | sed 's/ /%20/g')"
+
+    if echo "$dest" | grep -q -E "^$device_regex$" ; then
+        dest="$(lsblk -n -r -o MOUNTPOINT "$dest")"
+    fi
+
+    dest_file="$dest/LABEL"
+    dest_file_encoded="$dest/LABEL_ENCODED"
+
+    sudo_exec "echo \"$name\" > \"$dest_file\""
+    sudo_exec "echo \"$name_encoded\" > \"$dest_file_encoded\""
+
+    sudo_exec "chmod 0644 \"$dest_file\""
+    sudo_exec "chmod 0644 \"$dest_file_encoded\""
+}
+
+sudo_login
+
+start "$1" "$2"

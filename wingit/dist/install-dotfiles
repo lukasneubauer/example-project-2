@@ -1,0 +1,16 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+lib/cp "$0" "$PROJECTS_DIR/operating-system/dotfiles/.gitconfig" "$DOTFILES_DIR/.gitconfig"
+lib/cp "$0" "$PROJECTS_DIR/operating-system/dotfiles/.vimrc" "$DOTFILES_DIR/.vimrc"
+
+lib/cp "$0" "$PROJECTS_DIR/operating-system/wingit/dotfiles/.bash_profile" "$DOTFILES_DIR/.bash_profile"
+lib/cp "$0" "$PROJECTS_DIR/operating-system/wingit/dotfiles/.bashrc" "$DOTFILES_DIR/.bashrc"
+lib/cp "$0" "$PROJECTS_DIR/operating-system/wingit/dotfiles/.minttyrc" "$DOTFILES_DIR/.minttyrc"

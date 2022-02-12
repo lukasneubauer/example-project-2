@@ -1,0 +1,10 @@
+#!/bin/sh
+
+subject="$1"
+if [ -z "$subject" ] ; then
+    subject="$PWD"
+fi
+
+find "$subject" | sort | while read -r item ; do
+    echo "$(stat -c 0%a "$item"):$(realpath "$item")"
+done

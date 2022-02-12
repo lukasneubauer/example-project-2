@@ -1,0 +1,15 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+key="$2"
+value="$3"
+
+exe/cmd "$SUBCHANNEL_EXEC" "$call_trace -> $0" "xfconf-query -c xfce4-panel -p \"$key\" -t string -s \"$value\" -n -v"
+
+exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if [ \"$(xfconf-query -c xfce4-panel -p "$key")\" = \"$value\" ] ; then echo \"Xfce4 xfce4-panel channel \"$key\" plugin was set to \\\"$value\\\" successfully.\" ; exit 0 ; else echo \"Xfce4 xfce4-panel channel \"$key\" plugin was not set to \\\"$value\\\".\" ; exit 1 ; fi"

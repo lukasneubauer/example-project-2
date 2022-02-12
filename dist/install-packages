@@ -1,0 +1,57 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+deb/apt-get-update "$0"
+
+deb/apt-get-install "$0" ack
+deb/apt-get-install "$0" audacity
+deb/apt-get-install "$0" bash
+deb/apt-get-install "$0" bat
+deb/apt-get-install "$0" brasero
+deb/apt-get-install "$0" chromium
+deb/apt-get-install "$0" curl
+deb/apt-get-install "$0" devscripts
+deb/apt-get-install "$0" filezilla
+deb/apt-get-install "$0" firefox
+deb/apt-get-install "$0" fuse
+deb/apt-get-install "$0" g++
+deb/apt-get-install "$0" gimp
+deb/apt-get-install "$0" git
+deb/apt-get-install "$0" gitk
+deb/apt-get-install "$0" gkrellm
+deb/apt-get-install "$0" gnome-disk-utility
+deb/apt-get-install "$0" gparted
+deb/apt-get-install "$0" graphviz
+deb/apt-get-install "$0" htop
+deb/apt-get-install "$0" httpie
+deb/apt-get-install "$0" imagemagick
+deb/apt-get-install "$0" inkscape
+deb/apt-get-install "$0" jo
+deb/apt-get-install "$0" jq
+deb/apt-get-install "$0" kcachegrind
+deb/apt-get-install "$0" kid3
+deb/apt-get-install "$0" neofetch
+deb/apt-get-install "$0" ntfs-3g
+deb/apt-get-install "$0" nvidia-settings
+deb/apt-get-install "$0" pdfmod
+deb/apt-get-install "$0" playonlinux
+deb/apt-get-install "$0" shellcheck
+deb/apt-get-install "$0" shunit2
+deb/apt-get-install "$0" smartmontools
+deb/apt-get-install "$0" sqlitebrowser
+deb/apt-get-install "$0" steam
+deb/apt-get-install "$0" transmission-gtk
+deb/apt-get-install "$0" tree
+deb/apt-get-install "$0" vim
+deb/apt-get-install "$0" vlc
+deb/apt-get-install "$0" whois
+deb/apt-get-install "$0" xclip
+deb/apt-get-install "$0" xfce4-clipman
+deb/apt-get-install "$0" xournal

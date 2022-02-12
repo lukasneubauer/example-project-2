@@ -1,0 +1,628 @@
+#!/bin/sh
+
+test_dir="$PWD"
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$test_dir" || exit 1
+
+test_saves_help_1()
+{
+    ${_ASSERT_SAME_} "\"Usage: $root_dir/lib/saves [options]
+
+Options:
+  -h, --help             Display this help message
+  -c, --config <config>  Specify configuration file which to use
+  -b, --backup           Create save game backup
+  -s, --suffix <suffix>  When creating save game backup add suffix to it (it must not contain spaces)
+  -r, --revert           Revert save game backup
+  -d, --dry-run          Only print but do not actually run\"" "\"$("$root_dir/lib/saves")\""
+}
+
+test_saves_help_2()
+{
+    ${_ASSERT_SAME_} "\"Usage: $root_dir/lib/saves [options]
+
+Options:
+  -h, --help             Display this help message
+  -c, --config <config>  Specify configuration file which to use
+  -b, --backup           Create save game backup
+  -s, --suffix <suffix>  When creating save game backup add suffix to it (it must not contain spaces)
+  -r, --revert           Revert save game backup
+  -d, --dry-run          Only print but do not actually run\"" "\"$("$root_dir/lib/saves" -h)\""
+}
+
+test_saves_help_3()
+{
+    ${_ASSERT_SAME_} "\"Usage: $root_dir/lib/saves [options]
+
+Options:
+  -h, --help             Display this help message
+  -c, --config <config>  Specify configuration file which to use
+  -b, --backup           Create save game backup
+  -s, --suffix <suffix>  When creating save game backup add suffix to it (it must not contain spaces)
+  -r, --revert           Revert save game backup
+  -d, --dry-run          Only print but do not actually run\"" "\"$("$root_dir/lib/saves" --help)\""
+}
+
+test_saves_config_needs_value_1()
+{
+    ${_ASSERT_SAME_} '"Error: Option -c needs value."' "\"$("$root_dir/lib/saves" -c 2>&1)\""
+}
+
+test_saves_config_needs_value_2()
+{
+    ${_ASSERT_SAME_} '"Error: Option -c needs value."' "\"$("$root_dir/lib/saves" --config 2>&1)\""
+}
+
+test_saves_config_needs_value_3()
+{
+    ${_ASSERT_SAME_} '"Error: Option -c needs value."' "\"$("$root_dir/lib/saves" --config= 2>&1)\""
+}
+
+test_saves_suffix_needs_value_1()
+{
+    ${_ASSERT_SAME_} '"Error: Option -s needs value."' "\"$("$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" -b -s 2>&1)\""
+}
+
+test_saves_suffix_needs_value_2()
+{
+    ${_ASSERT_SAME_} '"Error: Option -s needs value."' "\"$("$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" -b --suffix 2>&1)\""
+}
+
+test_saves_suffix_needs_value_3()
+{
+    ${_ASSERT_SAME_} '"Error: Option -s needs value."' "\"$("$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" -b --suffix= 2>&1)\""
+}
+
+test_saves_dry_run_1()
+{
+    old_path="$PATH"
+
+    PATH="$root_dir/tests/mockups:$PATH"
+
+    cleanup
+
+    output="$(printf '1\n' | "$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" -b -d 2>&1)"
+
+    ${_ASSERT_SAME_} "\"Select number of the game which saves you want to backup:
+1. Example Game 1 (Linux:Steam)
+2. Example Game 2 (Linux:Steam)
+3. Example Game X (Linux:Steam)
+> Dry run: Created backup of '$root_dir/tests/resources/saves/game-1/save-games' as '$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00/save-games'.\"" "\"$output\""
+
+    ${_ASSERT_SAME_} '"1"' "\"$(find "$root_dir/tests/resources/backups/game-1" -mindepth 1 -maxdepth 1 -type d | wc -l)\""
+
+    ${_ASSERT_SAME_} '"1970-01-01-12-00-00"' "\"$(ls "$root_dir/tests/resources/backups/game-1")\""
+
+    PATH="$old_path"
+
+    unset output
+}
+
+test_saves_dry_run_2()
+{
+    old_path="$PATH"
+
+    PATH="$root_dir/tests/mockups:$PATH"
+
+    cleanup
+
+    output="$(printf '1\n' | "$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" -b --dry-run 2>&1)"
+
+    ${_ASSERT_SAME_} "\"Select number of the game which saves you want to backup:
+1. Example Game 1 (Linux:Steam)
+2. Example Game 2 (Linux:Steam)
+3. Example Game X (Linux:Steam)
+> Dry run: Created backup of '$root_dir/tests/resources/saves/game-1/save-games' as '$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00/save-games'.\"" "\"$output\""
+
+    ${_ASSERT_SAME_} '"1"' "\"$(find "$root_dir/tests/resources/backups/game-1" -mindepth 1 -maxdepth 1 -type d | wc -l)\""
+
+    ${_ASSERT_SAME_} '"1970-01-01-12-00-00"' "\"$(ls "$root_dir/tests/resources/backups/game-1")\""
+
+    PATH="$old_path"
+
+    unset output
+}
+
+test_saves_dry_run_3()
+{
+    old_path="$PATH"
+
+    PATH="$root_dir/tests/mockups:$PATH"
+
+    cleanup
+
+    output="$(printf '1\n' | "$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" -b -s Lorem-ipsum -d 2>&1)"
+
+    ${_ASSERT_SAME_} "\"Select number of the game which saves you want to backup:
+1. Example Game 1 (Linux:Steam)
+2. Example Game 2 (Linux:Steam)
+3. Example Game X (Linux:Steam)
+> Dry run: Created backup of '$root_dir/tests/resources/saves/game-1/save-games' as '$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00-Lorem-ipsum/save-games'.\"" "\"$output\""
+
+    ${_ASSERT_SAME_} '"1"' "\"$(find "$root_dir/tests/resources/backups/game-1" -mindepth 1 -maxdepth 1 -type d | wc -l)\""
+
+    ${_ASSERT_SAME_} '"1970-01-01-12-00-00"' "\"$(ls "$root_dir/tests/resources/backups/game-1")\""
+
+    PATH="$old_path"
+
+    unset output
+}
+
+test_saves_dry_run_4()
+{
+    old_path="$PATH"
+
+    PATH="$root_dir/tests/mockups:$PATH"
+
+    cleanup
+
+    output="$(printf '1\n' | "$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" -b -s Lorem-ipsum --dry-run 2>&1)"
+
+    ${_ASSERT_SAME_} "\"Select number of the game which saves you want to backup:
+1. Example Game 1 (Linux:Steam)
+2. Example Game 2 (Linux:Steam)
+3. Example Game X (Linux:Steam)
+> Dry run: Created backup of '$root_dir/tests/resources/saves/game-1/save-games' as '$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00-Lorem-ipsum/save-games'.\"" "\"$output\""
+
+    ${_ASSERT_SAME_} '"1"' "\"$(find "$root_dir/tests/resources/backups/game-1" -mindepth 1 -maxdepth 1 -type d | wc -l)\""
+
+    ${_ASSERT_SAME_} '"1970-01-01-12-00-00"' "\"$(ls "$root_dir/tests/resources/backups/game-1")\""
+
+    PATH="$old_path"
+
+    unset output
+}
+
+test_saves_dry_run_5()
+{
+    old_path="$PATH"
+
+    PATH="$root_dir/tests/mockups:$PATH"
+
+    cleanup
+
+    output="$(printf '2\n1\n' | "$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" -r -d 2>&1)"
+
+    ${_ASSERT_SAME_} "\"Select number of the game which saves you want to revert:
+1. Example Game 1 (Linux:Steam)
+2. Example Game 2 (Linux:Steam)
+3. Example Game X (Linux:Steam)
+> Select number of backup which you want to use:
+1. 1970-01-01-12-00-00
+2. 1980-01-01-12-00-00
+3. 1990-01-01-12-00-00
+> Dry run: Reverted backup '$root_dir/tests/resources/backups/game-2/1970-01-01-12-00-00/save-games' as '$root_dir/tests/resources/saves/game-2/save-games'.\"" "\"$output\""
+
+    ${_ASSERT_SAME_} '"1"' "\"$(find "$root_dir/tests/resources/saves/game-2" -mindepth 1 -maxdepth 1 | wc -l)\""
+
+    ${_ASSERT_TRUE_} "\"! [ -d \"$root_dir/tests/resources/saves/game-2/save-games\" ]\""
+
+    PATH="$old_path"
+
+    unset output
+}
+
+test_saves_dry_run_6()
+{
+    old_path="$PATH"
+
+    PATH="$root_dir/tests/mockups:$PATH"
+
+    cleanup
+
+    output="$(printf '2\n1\n' | "$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" -r --dry-run 2>&1)"
+
+    ${_ASSERT_SAME_} "\"Select number of the game which saves you want to revert:
+1. Example Game 1 (Linux:Steam)
+2. Example Game 2 (Linux:Steam)
+3. Example Game X (Linux:Steam)
+> Select number of backup which you want to use:
+1. 1970-01-01-12-00-00
+2. 1980-01-01-12-00-00
+3. 1990-01-01-12-00-00
+> Dry run: Reverted backup '$root_dir/tests/resources/backups/game-2/1970-01-01-12-00-00/save-games' as '$root_dir/tests/resources/saves/game-2/save-games'.\"" "\"$output\""
+
+    ${_ASSERT_SAME_} '"1"' "\"$(find "$root_dir/tests/resources/saves/game-2" -mindepth 1 -maxdepth 1 | wc -l)\""
+
+    ${_ASSERT_TRUE_} "\"! [ -d \"$root_dir/tests/resources/saves/game-2/save-games\" ]\""
+
+    PATH="$old_path"
+
+    unset output
+}
+
+test_saves_unknown_option()
+{
+    ${_ASSERT_SAME_} '"Error: Option -x is not defined."' "\"$("$root_dir/lib/saves" -x 2>&1)\""
+}
+
+test_saves_missing_configuration_file_1()
+{
+    ${_ASSERT_SAME_} '"Error: Please, specify configuration file using the -c option."' "\"$("$root_dir/lib/saves" -b 2>&1)\""
+}
+
+test_saves_missing_configuration_file_2()
+{
+    ${_ASSERT_SAME_} '"Error: Please, specify configuration file using the -c option."' "\"$("$root_dir/lib/saves" --backup 2>&1)\""
+}
+
+test_saves_missing_configuration_file_3()
+{
+    ${_ASSERT_SAME_} '"Error: Please, specify configuration file using the -c option."' "\"$("$root_dir/lib/saves" -r 2>&1)\""
+}
+
+test_saves_missing_configuration_file_4()
+{
+    ${_ASSERT_SAME_} '"Error: Please, specify configuration file using the -c option."' "\"$("$root_dir/lib/saves" --revert 2>&1)\""
+}
+
+test_saves_missing_configuration_file_5()
+{
+    ${_ASSERT_SAME_} '"Error: Please, specify configuration file using the -c option."' "\"$("$root_dir/lib/saves" -s Lorem-ipsum 2>&1)\""
+}
+
+test_saves_missing_configuration_file_6()
+{
+    ${_ASSERT_SAME_} '"Error: Please, specify configuration file using the -c option."' "\"$("$root_dir/lib/saves" --suffix Lorem-ipsum 2>&1)\""
+}
+
+test_saves_missing_configuration_file_7()
+{
+    ${_ASSERT_SAME_} '"Error: Please, specify configuration file using the -c option."' "\"$("$root_dir/lib/saves" --suffix=Lorem-ipsum 2>&1)\""
+}
+
+test_saves_cannot_use_both_revert_and_suffix_together_1()
+{
+    ${_ASSERT_SAME_} '"Error: Option -s cannot be used together with option -r."' "\"$("$root_dir/lib/saves" -c tests/config/saves.conf -r -s Lorem-ipsum 2>&1)\""
+}
+
+test_saves_cannot_use_both_revert_and_suffix_together_2()
+{
+    ${_ASSERT_SAME_} '"Error: Option -s cannot be used together with option -r."' "\"$("$root_dir/lib/saves" -c tests/config/saves.conf --revert --suffix Lorem-ipsum 2>&1)\""
+}
+
+test_saves_cannot_use_both_revert_and_suffix_together_3()
+{
+    ${_ASSERT_SAME_} '"Error: Option -s cannot be used together with option -r."' "\"$("$root_dir/lib/saves" -c tests/config/saves.conf --revert --suffix=Lorem-ipsum 2>&1)\""
+}
+
+test_saves_specify_either_backup_or_revert_1()
+{
+    ${_ASSERT_SAME_} '"Error: Please, specify either the -b or -r option."' "\"$("$root_dir/lib/saves" -c tests/config/saves.conf 2>&1)\""
+}
+
+test_saves_specify_either_backup_or_revert_2()
+{
+    ${_ASSERT_SAME_} '"Error: Please, specify either the -b or -r option."' "\"$("$root_dir/lib/saves" --config tests/config/saves.conf 2>&1)\""
+}
+
+test_saves_specify_either_backup_or_revert_3()
+{
+    ${_ASSERT_SAME_} '"Error: Please, specify either the -b or -r option."' "\"$("$root_dir/lib/saves" --config=tests/config/saves.conf 2>&1)\""
+}
+
+test_saves_cannot_use_both_backup_and_revert_together_1()
+{
+    ${_ASSERT_SAME_} '"Error: Cannot use both -b and -r options together."' "\"$("$root_dir/lib/saves" -c tests/config/saves.conf -b -r 2>&1)\""
+}
+
+test_saves_cannot_use_both_backup_and_revert_together_2()
+{
+    ${_ASSERT_SAME_} '"Error: Cannot use both -b and -r options together."' "\"$("$root_dir/lib/saves" -c tests/config/saves.conf --backup --revert 2>&1)\""
+}
+
+test_saves_cannot_use_both_backup_and_revert_together_3()
+{
+    ${_ASSERT_SAME_} '"Error: Cannot use both -b and -r options together."' "\"$("$root_dir/lib/saves" -c tests/config/saves.conf -r -b 2>&1)\""
+}
+
+test_saves_cannot_use_both_backup_and_revert_together_4()
+{
+    ${_ASSERT_SAME_} '"Error: Cannot use both -b and -r options together."' "\"$("$root_dir/lib/saves" -c tests/config/saves.conf --revert --backup 2>&1)\""
+}
+
+test_saves_backup_1()
+{
+    old_path="$PATH"
+
+    PATH="$root_dir/tests/mockups:$PATH"
+
+    cleanup
+
+    ${_ASSERT_SAME_} '"1970-01-01-12-00-00"' "\"$(ls "$root_dir/tests/resources/backups/game-1")\""
+
+    output="$(printf '1\n' | "$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" -b 2>&1)"
+
+    ${_ASSERT_SAME_} "\"Select number of the game which saves you want to backup:
+1. Example Game 1 (Linux:Steam)
+2. Example Game 2 (Linux:Steam)
+3. Example Game X (Linux:Steam)
+> Created backup of '$root_dir/tests/resources/saves/game-1/save-games' as '$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00/save-games'.\"" "\"$output\""
+
+    ${_ASSERT_SAME_} '"2"' "\"$(find "$root_dir/tests/resources/backups/game-1" -mindepth 1 -maxdepth 1 -type d | wc -l)\""
+
+    ${_ASSERT_SAME_} '"1970-01-01-12-00-00
+2000-01-01-12-00-00"' "\"$(ls "$root_dir/tests/resources/backups/game-1")\""
+
+    ${_ASSERT_SAME_} '"save-games"' "\"$(ls "$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00")\""
+
+    ${_ASSERT_SAME_} '"profile.txt"' "\"$(ls "$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00/save-games")\""
+
+    PATH="$old_path"
+
+    unset output
+
+    cleanup
+}
+
+test_saves_backup_2()
+{
+    old_path="$PATH"
+
+    PATH="$root_dir/tests/mockups:$PATH"
+
+    cleanup
+
+    ${_ASSERT_SAME_} '"1970-01-01-12-00-00"' "\"$(ls "$root_dir/tests/resources/backups/game-1")\""
+
+    output="$(printf '1\n' | "$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" --backup 2>&1)"
+
+    ${_ASSERT_SAME_} "\"Select number of the game which saves you want to backup:
+1. Example Game 1 (Linux:Steam)
+2. Example Game 2 (Linux:Steam)
+3. Example Game X (Linux:Steam)
+> Created backup of '$root_dir/tests/resources/saves/game-1/save-games' as '$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00/save-games'.\"" "\"$output\""
+
+    ${_ASSERT_SAME_} '"2"' "\"$(find "$root_dir/tests/resources/backups/game-1" -mindepth 1 -maxdepth 1 -type d | wc -l)\""
+
+    ${_ASSERT_SAME_} '"1970-01-01-12-00-00
+2000-01-01-12-00-00"' "\"$(ls "$root_dir/tests/resources/backups/game-1")\""
+
+    ${_ASSERT_SAME_} '"save-games"' "\"$(ls "$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00")\""
+
+    ${_ASSERT_SAME_} '"profile.txt"' "\"$(ls "$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00/save-games")\""
+
+    PATH="$old_path"
+
+    unset output
+
+    cleanup
+}
+
+test_saves_backup_suffix_1()
+{
+    old_path="$PATH"
+
+    PATH="$root_dir/tests/mockups:$PATH"
+
+    cleanup
+
+    ${_ASSERT_SAME_} '"1970-01-01-12-00-00"' "\"$(ls "$root_dir/tests/resources/backups/game-1")\""
+
+    output="$(printf '1\n' | "$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" -b -s Lorem-ipsum 2>&1)"
+
+    ${_ASSERT_SAME_} "\"Select number of the game which saves you want to backup:
+1. Example Game 1 (Linux:Steam)
+2. Example Game 2 (Linux:Steam)
+3. Example Game X (Linux:Steam)
+> Created backup of '$root_dir/tests/resources/saves/game-1/save-games' as '$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00-Lorem-ipsum/save-games'.\"" "\"$output\""
+
+    ${_ASSERT_SAME_} '"2"' "\"$(find "$root_dir/tests/resources/backups/game-1" -mindepth 1 -maxdepth 1 -type d | wc -l)\""
+
+    ${_ASSERT_SAME_} '"1970-01-01-12-00-00
+2000-01-01-12-00-00-Lorem-ipsum"' "\"$(ls "$root_dir/tests/resources/backups/game-1")\""
+
+    ${_ASSERT_SAME_} '"save-games"' "\"$(ls "$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00-Lorem-ipsum")\""
+
+    ${_ASSERT_SAME_} '"profile.txt"' "\"$(ls "$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00-Lorem-ipsum/save-games")\""
+
+    PATH="$old_path"
+
+    unset output
+
+    cleanup
+}
+
+test_saves_backup_suffix_2()
+{
+    old_path="$PATH"
+
+    PATH="$root_dir/tests/mockups:$PATH"
+
+    cleanup
+
+    ${_ASSERT_SAME_} '"1970-01-01-12-00-00"' "\"$(ls "$root_dir/tests/resources/backups/game-1")\""
+
+    output="$(printf '1\n' | "$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" --backup --suffix Lorem-ipsum 2>&1)"
+
+    ${_ASSERT_SAME_} "\"Select number of the game which saves you want to backup:
+1. Example Game 1 (Linux:Steam)
+2. Example Game 2 (Linux:Steam)
+3. Example Game X (Linux:Steam)
+> Created backup of '$root_dir/tests/resources/saves/game-1/save-games' as '$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00-Lorem-ipsum/save-games'.\"" "\"$output\""
+
+    ${_ASSERT_SAME_} '"2"' "\"$(find "$root_dir/tests/resources/backups/game-1" -mindepth 1 -maxdepth 1 -type d | wc -l)\""
+
+    ${_ASSERT_SAME_} '"1970-01-01-12-00-00
+2000-01-01-12-00-00-Lorem-ipsum"' "\"$(ls "$root_dir/tests/resources/backups/game-1")\""
+
+    ${_ASSERT_SAME_} '"save-games"' "\"$(ls "$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00-Lorem-ipsum")\""
+
+    ${_ASSERT_SAME_} '"profile.txt"' "\"$(ls "$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00-Lorem-ipsum/save-games")\""
+
+    PATH="$old_path"
+
+    unset output
+
+    cleanup
+}
+
+test_saves_backup_suffix_3()
+{
+    old_path="$PATH"
+
+    PATH="$root_dir/tests/mockups:$PATH"
+
+    cleanup
+
+    ${_ASSERT_SAME_} '"1970-01-01-12-00-00"' "\"$(ls "$root_dir/tests/resources/backups/game-1")\""
+
+    output="$(printf '1\n' | "$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" --backup --suffix=Lorem-ipsum 2>&1)"
+
+    ${_ASSERT_SAME_} "\"Select number of the game which saves you want to backup:
+1. Example Game 1 (Linux:Steam)
+2. Example Game 2 (Linux:Steam)
+3. Example Game X (Linux:Steam)
+> Created backup of '$root_dir/tests/resources/saves/game-1/save-games' as '$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00-Lorem-ipsum/save-games'.\"" "\"$output\""
+
+    ${_ASSERT_SAME_} '"2"' "\"$(find "$root_dir/tests/resources/backups/game-1" -mindepth 1 -maxdepth 1 -type d | wc -l)\""
+
+    ${_ASSERT_SAME_} '"1970-01-01-12-00-00
+2000-01-01-12-00-00-Lorem-ipsum"' "\"$(ls "$root_dir/tests/resources/backups/game-1")\""
+
+    ${_ASSERT_SAME_} '"save-games"' "\"$(ls "$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00-Lorem-ipsum")\""
+
+    ${_ASSERT_SAME_} '"profile.txt"' "\"$(ls "$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00-Lorem-ipsum/save-games")\""
+
+    PATH="$old_path"
+
+    unset output
+
+    cleanup
+}
+
+test_saves_revert_1()
+{
+    cleanup
+
+    ${_ASSERT_SAME_} '"game-1
+game-2"' "\"$(ls "$root_dir/tests/resources/saves")\""
+
+    ${_ASSERT_SAME_} '"1"' "\"$(find "$root_dir/tests/resources/saves/game-2" -mindepth 1 -maxdepth 1 | wc -l)\""
+
+    ${_ASSERT_TRUE_} "\"! [ -d \"$root_dir/tests/resources/saves/game-2/save-games\" ]\""
+
+    output="$(printf '2\n1\n' | "$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" -r 2>&1)"
+
+    ${_ASSERT_SAME_} "\"Select number of the game which saves you want to revert:
+1. Example Game 1 (Linux:Steam)
+2. Example Game 2 (Linux:Steam)
+3. Example Game X (Linux:Steam)
+> Select number of backup which you want to use:
+1. 1970-01-01-12-00-00
+2. 1980-01-01-12-00-00
+3. 1990-01-01-12-00-00
+> Reverted backup '$root_dir/tests/resources/backups/game-2/1970-01-01-12-00-00/save-games' as '$root_dir/tests/resources/saves/game-2/save-games'.\"" "\"$output\""
+
+    ${_ASSERT_SAME_} '"game-1
+game-2"' "\"$(ls "$root_dir/tests/resources/saves")\""
+
+    ${_ASSERT_SAME_} '"2"' "\"$(find "$root_dir/tests/resources/saves/game-2" -mindepth 1 -maxdepth 1 | wc -l)\""
+
+    ${_ASSERT_TRUE_} "\"[ -d \"$root_dir/tests/resources/saves/game-2/save-games\" ]\""
+
+    ${_ASSERT_SAME_} '"profile.txt"' "\"$(ls "$root_dir/tests/resources/saves/game-2/save-games")\""
+
+    unset output
+
+    cleanup
+}
+
+test_saves_revert_2()
+{
+    cleanup
+
+    ${_ASSERT_SAME_} '"game-1
+game-2"' "\"$(ls "$root_dir/tests/resources/saves")\""
+
+    ${_ASSERT_SAME_} '"1"' "\"$(find "$root_dir/tests/resources/saves/game-2" -mindepth 1 -maxdepth 1 | wc -l)\""
+
+    ${_ASSERT_TRUE_} "\"! [ -d \"$root_dir/tests/resources/saves/game-2/save-games\" ]\""
+
+    output="$(printf '2\n1\n' | "$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" --revert 2>&1)"
+
+    ${_ASSERT_SAME_} "\"Select number of the game which saves you want to revert:
+1. Example Game 1 (Linux:Steam)
+2. Example Game 2 (Linux:Steam)
+3. Example Game X (Linux:Steam)
+> Select number of backup which you want to use:
+1. 1970-01-01-12-00-00
+2. 1980-01-01-12-00-00
+3. 1990-01-01-12-00-00
+> Reverted backup '$root_dir/tests/resources/backups/game-2/1970-01-01-12-00-00/save-games' as '$root_dir/tests/resources/saves/game-2/save-games'.\"" "\"$output\""
+
+    ${_ASSERT_SAME_} '"game-1
+game-2"' "\"$(ls "$root_dir/tests/resources/saves")\""
+
+    ${_ASSERT_SAME_} '"2"' "\"$(find "$root_dir/tests/resources/saves/game-2" -mindepth 1 -maxdepth 1 | wc -l)\""
+
+    ${_ASSERT_TRUE_} "\"[ -d \"$root_dir/tests/resources/saves/game-2/save-games\" ]\""
+
+    ${_ASSERT_SAME_} '"profile.txt"' "\"$(ls "$root_dir/tests/resources/saves/game-2/save-games")\""
+
+    unset output
+
+    cleanup
+}
+
+test_saves_backup_wrong_formatting()
+{
+    output="$("$root_dir/lib/saves" -c "$root_dir/tests/config/saves-wrong-formatting.conf" -b 2>&1)"
+
+    ${_ASSERT_SAME_} '"Error: Each line in configuration file has to contain only 2 semicolon characters (;) as a delimiter by which the line is split.
+       The malformed line is line number 4, see bellow:
+       Example Game 2 (Linux:Steam),path/to/saves/game-2/save-games;path/to/backups/game-2"' "\"$output\""
+
+    unset output
+}
+
+test_saves_revert_wrong_formatting()
+{
+    output="$("$root_dir/lib/saves" -c "$root_dir/tests/config/saves-wrong-formatting.conf" -r 2>&1)"
+
+    ${_ASSERT_SAME_} '"Error: Each line in configuration file has to contain only 2 semicolon characters (;) as a delimiter by which the line is split.
+       The malformed line is line number 4, see bellow:
+       Example Game 2 (Linux:Steam),path/to/saves/game-2/save-games;path/to/backups/game-2"' "\"$output\""
+
+    unset output
+}
+
+cleanup()
+{
+    rm -fr "$root_dir/tests/resources/backups/game-1/2000-01-01-12-00-00"*
+    rm -fr "$root_dir/tests/resources/saves/game-2/save-games"
+}
+
+test_saves_backup_not_existing_directory()
+{
+    output="$(printf '3\n' | "$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" -b 2>&1)"
+
+    ${_ASSERT_SAME_} '"Select number of the game which saves you want to backup:
+1. Example Game 1 (Linux:Steam)
+2. Example Game 2 (Linux:Steam)
+3. Example Game X (Linux:Steam)
+> Error: No saves found."' "\"$output\""
+
+    unset output
+}
+
+test_saves_revert_not_existing_directory()
+{
+    cleanup
+
+    output="$(printf '3\n1\n' | "$root_dir/lib/saves" -c "$root_dir/tests/config/saves.conf" -r 2>&1)"
+
+    ${_ASSERT_SAME_} '"Select number of the game which saves you want to revert:
+1. Example Game 1 (Linux:Steam)
+2. Example Game 2 (Linux:Steam)
+3. Example Game X (Linux:Steam)
+> Error: No backups found."' "\"$output\""
+
+    unset output
+}
+
+. "$(command -v shunit2)"

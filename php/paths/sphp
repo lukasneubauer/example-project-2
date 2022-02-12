@@ -1,0 +1,11 @@
+#!/bin/sh
+
+selected_php_version="$1"
+
+sudo update-alternatives --set php "$(command -v "php$selected_php_version")"
+sudo update-alternatives --set php-cgi "$(command -v "php-cgi$selected_php_version")"
+sudo update-alternatives --set phar "$(command -v "phar$selected_php_version")"
+sudo update-alternatives --set phar.phar "$(command -v "phar.phar$selected_php_version")"
+sudo update-alternatives --set phpdbg "$(command -v "phpdbg$selected_php_version")"
+sudo update-alternatives --set php-config "$(command -v "php-config$selected_php_version")"
+sudo update-alternatives --set phpize "$(command -v "phpize$selected_php_version")"

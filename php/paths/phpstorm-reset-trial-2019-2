@@ -1,0 +1,9 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+php/resources/phpstorm-reset-trial.phar "$HOME/.PhpStorm2019.2/config"

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+mod="$2"
+dst="$3"
+
+exe/cmd-sudo "$SUBCHANNEL_EXEC" "$call_trace -> $0" "chmod -v -R \"$mod\" \"$dst\""
+
+exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if [ \"$(stat -c 0%a "$dst")\" -eq \"$mod\" ] ; then echo \"File \\\"$dst\\\" permissions were successfully set to \\\"$mod\\\".\" ; exit 0 ; else echo \"File \\\"$dst\\\" permissions were not set to \\\"$mod\\\".\" ; exit 1 ; fi"

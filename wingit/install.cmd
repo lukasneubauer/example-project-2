@@ -1,0 +1,12 @@
+@echo off
+curl -fsLS "https://download.mozilla.org/?product=firefox-stub&os=win&lang=en-US" -o "%USERPROFILE%\Downloads\Firefox_Installer.exe"
+curl -fsLS "https://dl.google.com/chrome/install/latest/chrome_installer.exe" -o "%USERPROFILE%\Downloads\chrome_installer.exe"
+curl -fsLS "https://uk.download.nvidia.com/GFE/GFEClient/3.20.5.70/GeForce_Experience_v3.20.5.70.exe" -o "%USERPROFILE%\Downloads\GeForce_Experience_v3.20.5.70.exe"
+curl -fsLS "https://github.com/git-for-windows/git/releases/download/v2.29.2.windows.3/Git-2.29.2.3-64-bit.exe" -o "%USERPROFILE%\Downloads\Git-2.29.2.3-64-bit.exe"
+curl -fsLS "https://cdn.cloudflare.steamstatic.com/client/installer/SteamSetup.exe" -o "%USERPROFILE%\Downloads\SteamSetup.exe"
+curl -fsLS "https://webinstallers.gog-statics.com/download/GOG_Galaxy_2.0.exe" -o "%USERPROFILE%\Downloads\GOG_Galaxy_2.0.exe"
+curl -fsLS "https://launcher-public-service-prod06.ol.epicgames.com/launcher/api/installer/download/EpicGamesLauncherInstaller.msi" -o "%USERPROFILE%\Downloads\EpicGamesLauncherInstaller.msi"
+curl -fsLS "https://www.dm.origin.com/download" -o "%USERPROFILE%\Downloads\OriginThinSetup.exe"
+curl -fsLS "https://ubi.li/4vxt9" -o "%USERPROFILE%\Downloads\UbisoftConnectInstaller.exe"
+curl -fsLS "https://download.cdp.bethesda.net/BethesdaNetLauncher_Setup.exe" -o "%USERPROFILE%\Downloads\BethesdaNetLauncher_Setup.exe"
+curl -fsLS "https://www.battle.net/download/getInstallerForGame" -o "%USERPROFILE%\Downloads\Battle.net-Setup.exe"

@@ -1,0 +1,18 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+lib/get-phar "$0" 'https://getcomposer.org/download/latest-1.x/composer.phar' "$BIN_DIR/composer-1"
+lib/get-phar "$0" 'https://getcomposer.org/download/latest-2.x/composer.phar' "$BIN_DIR/composer-2"
+lib/get-phar "$0" 'https://phar.phpunit.de/phpcpd.phar' "$BIN_DIR/phpcpd"
+lib/get-phar "$0" 'https://phar.phpunit.de/phpdcd.phar' "$BIN_DIR/phpdcd"
+lib/get-phar "$0" 'https://phar.phpunit.de/phploc.phar' "$BIN_DIR/phploc"
+lib/get-phar "$0" 'https://github.com/phpmetrics/PhpMetrics/raw/master/build/phpmetrics.phar' "$BIN_DIR/phpmetrics"
+
+lib/ln "$0" 'composer-2' "$BIN_DIR/composer"

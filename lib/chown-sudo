@@ -1,0 +1,15 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+own="$2"
+dst="$3"
+
+exe/cmd-sudo "$SUBCHANNEL_EXEC" "$call_trace -> $0" "chown -v -R \"$own\" \"$dst\""
+
+exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if [ \"$(stat -c %U "$dst")\" = \"$own\" ] ; then echo \"File \\\"$dst\\\" ownership was successfully set to \\\"$own\\\".\" ; exit 0 ; else echo \"File \\\"$dst\\\" ownership was not set to \\\"$own\\\".\" ; exit 1 ; fi"

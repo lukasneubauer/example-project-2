@@ -1,0 +1,49 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+bg()
+{
+    if [ "$USE_COLORS" -eq 1 ] ; then
+        printf "\033[30;42m%s\033[00m\n" "$1"
+    else
+        printf "%s\n" "$1"
+    fi
+}
+
+spaces()
+{
+    number="$1"
+    spaces=''
+    space=' '
+
+    for _ in $(seq 1 "$number") ; do
+        spaces="${spaces}${space}"
+    done
+
+    printf "%s" "$spaces"
+}
+
+show()
+{
+    text="$1"
+    text_length="${#text}"
+
+    cols="$TERM_WIDTH"
+
+    prefix='  Executing '
+    prefix_length="${#prefix}"
+
+    end_of_the_line_length="$((cols - prefix_length - text_length))"
+    end_of_the_line="$(spaces "$end_of_the_line_length")"
+
+    bg "$(spaces "$cols")"
+    bg "${prefix}${text}${end_of_the_line}"
+    bg "$(spaces "$cols")"
+}
+
+show "$*"

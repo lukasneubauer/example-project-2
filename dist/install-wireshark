@@ -1,0 +1,20 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+deb/add-apt-repository "$0" wireshark-dev/stable
+
+deb/apt-get-update "$0"
+
+exe/cmd-sudo-pipe "$SUBCHANNEL_EXEC" "$0" "echo 'wireshark-common wireshark-common/install-setuid boolean true'" 'debconf-set-selections'
+
+deb/apt-get-install "$0" wireshark
+
+exe/cmd-sudo "$SUBCHANNEL_EXEC" "$0" "usermod -a -G wireshark \"$USER\""
+exe/cmd "$SUBCHANNEL_TEST" "$0" "if id -n -G \"$USER\" | grep -q 'wireshark' ; then echo \"User \\\"$USER\\\" was added in group \\\"wireshark\\\" successfully.\" ; exit 0 ; else echo \"User \\\"$USER\\\" was not added in group \\\"wireshark\\\".\" ; exit 1 ; fi"

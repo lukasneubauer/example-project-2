@@ -1,0 +1,3 @@
+#!/bin/sh
+
+git commit -m "Registered class $1 as a service"

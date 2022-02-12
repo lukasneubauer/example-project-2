@@ -1,0 +1,49 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+sudo_login()
+{
+    while true ; do
+        printf 'Enter password for sudo: '
+        stty -echo
+        read -r sudo_password
+        stty echo
+        sudo -k
+        echo "$sudo_password" | sudo -p '' -S echo '' > /dev/null 2>&1
+        if [ "$?" -eq 0 ] ; then
+            echo 'OK'
+            break
+        else
+            exit
+        fi
+    done
+}
+
+sudo_exec()
+{
+    sudo -k && printf "%s" "$sudo_password" | sudo -p '' -S sh -c "$1" 2>&1
+}
+
+start()
+{
+    part="$1"
+    disk="$(echo "$part" | cut -c -8)"
+
+    if [ "$part" = '' ] ; then
+        echo
+        1>&2 echo 'Error: Please, make sure that you have specified target partition, e.g.: /dev/sda1.'
+        exit 1
+    fi
+
+    sudo_exec "mount \"$part\" /mnt"
+    sudo_exec "grub-install --root-directory=/mnt \"$disk\""
+}
+
+sudo_login
+
+start "$1"

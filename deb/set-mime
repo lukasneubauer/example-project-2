@@ -1,0 +1,15 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+mimetype="$2"
+handler="$3"
+
+exe/cmd "$SUBCHANNEL_EXEC" "$call_trace -> $0" "gio mime \"$mimetype\" \"$handler\""
+
+exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if [ \"$(gio mime "$mimetype" | grep "$mimetype" | cut -d ' ' -f 5)\" = \"$handler\" ] ; then echo \"Handler \\\"$handler\\\" was set as default for \\\"$mimetype\\\" mime type.\" ; exit 0 ; else echo \"Handler \\\"$handler\\\" was not set as default for \\\"$mimetype\\\" mime type.\" ; exit 1 ; fi"

@@ -1,0 +1,39 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+nodejs_gpg_key="$TMP_DIR/nodesource.gpg.key"
+nodejs_sources='/etc/apt/sources.list.d/nodesource.list'
+nodejs_github_url='https://github.com/nodejs/node'
+nodejs_latest_url="$nodejs_github_url/releases/latest"
+nodejs_latest_version="$(curl -fsLS -I -o /dev/null -w '%{url_effective}' "$nodejs_latest_url" | cut -d 'v' -f 2)"
+nodejs_latest_version_major="$(echo "$nodejs_latest_version" | cut -d '.' -f 1)"
+nodejs_version="node_$nodejs_latest_version_major.x"
+
+lib/curl "$0" 'https://deb.nodesource.com/gpgkey/nodesource.gpg.key' "$nodejs_gpg_key"
+deb/apt-key-add "$0" "$nodejs_gpg_key"
+lib/rm "$0" "$nodejs_gpg_key"
+deb/apt-key-fingerprint "$0" '68576280'
+
+lib/fwrite-sudo "$0" "deb https://deb.nodesource.com/$nodejs_version $(dist/utils/distrib-codename) main" "$nodejs_sources"
+lib/fwrite-sudo "$0" "deb-src https://deb.nodesource.com/$nodejs_version $(dist/utils/distrib-codename) main" "$nodejs_sources"
+
+deb/apt-get-update "$0"
+deb/apt-get-install "$0" nodejs
+
+exe/cmd "$SUBCHANNEL_TEST" "$0" "if command -v npm > /dev/null ; then echo \"Command \\\"npm\\\" was installed successfully.\" ; exit 0 ; else echo \"Command \\\"npm\\\" was not installed.\" ; exit 1 ; fi"
+
+for package in elasticdump newman npm underscore-cli ; do
+    exe/cmd-sudo "$SUBCHANNEL_EXEC" "$0" "npm install -g \"$package\""
+    exe/cmd "$SUBCHANNEL_TEST" "$0" "if npm list -g | grep -q \" $package@\" ; then echo \"Global NPM package \\\"$package\\\" was installed successfully.\" ; exit 0 ; else echo \"Global NPM package \\\"$package\\\" was not installed.\" ; exit 1 ; fi"
+done
+
+lib/rm-sudo "$0" "$HOME_DIR/.npm"
+lib/chown-sudo "$0" "$(id -u -n "$USER")" "$HOME_DIR/.config"
+lib/chgrp-sudo "$0" "$(id -g -n "$USER")" "$HOME_DIR/.config"

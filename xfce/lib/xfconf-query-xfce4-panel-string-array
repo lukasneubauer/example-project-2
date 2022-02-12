@@ -1,0 +1,19 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+key="$2"
+values="$3"
+
+args="$(echo "$values" | sed 's/ / -t string -s /g' | sed 's/^/-t string -s /g')"
+
+exe/cmd "$SUBCHANNEL_EXEC" "$call_trace -> $0" "xfconf-query -c xfce4-panel -p \"$key\" $args -a -n -v"
+
+for value in $values ; do
+    exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if xfconf-query -c xfce4-panel -p \"$key\" | sed '1,2d' | grep -q -F \"$value\" ; then echo \"Xfce4 xfce4-panel channel \"$key\" plugin was set to contain \\\"$value\\\" successfully.\" ; exit 0 ; else echo \"Xfce4 xfce4-panel channel \"$key\" plugin was not set to contain \\\"$value\\\".\" ; exit 1 ; fi"
+done

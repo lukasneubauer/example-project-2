@@ -1,0 +1,3 @@
+#!/bin/sh
+
+git commit -m "Removing '$1' dev dependency from composer.json"

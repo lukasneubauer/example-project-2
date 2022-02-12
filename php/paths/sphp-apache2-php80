@@ -1,0 +1,3 @@
+#!/bin/sh
+
+sphp-apache2-php 8.0

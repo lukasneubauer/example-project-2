@@ -1,0 +1,18 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+path="$2"
+arch="$3"
+dest="$4"
+
+lib/curl "$call_trace -> $0" "$path" "$arch"
+
+lib/mkdir "$call_trace -> $0" "$dest"
+
+lib/untar-bz "$call_trace -> $0" "$arch" "$dest"

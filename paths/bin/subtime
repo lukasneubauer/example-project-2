@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# run as: command 12:45 e.g. subtract 12 hours and 45 minutes from now
+#         command 00:45 e.g. subtract 45 minutes from now
+#         command  0:45 e.g. subtract 45 minutes from now
+#         command    45 e.g. subtract 45 minutes from now
+
+t="$1"
+
+if echo "$t" | grep ':' -q ; then
+    h="$(echo "$t" | cut -d ':' -f 1)"
+    m="$(echo "$t" | cut -d ':' -f 2)"
+else
+    h='00'
+    m="$t"
+fi
+
+date --date "-${h}hours -${m}minutes" +%H:%M

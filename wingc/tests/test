@@ -1,0 +1,81 @@
+#!/bin/sh
+
+test_dir="$PWD"
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$test_dir" || exit 1
+
+test_wingc()
+{
+    rm -fr "$root_dir/tests/data-tmp"
+    cp -fr "$root_dir/tests/data" "$root_dir/tests/data-tmp"
+
+    ${_ASSERT_SAME_} '"IN: tests/data-tmp/single-level
+CHECKING: tests/data-tmp/single-level/stop.txt
+CHECKING: tests/data-tmp/single-level/stop
+CHECKING: tests/data-tmp/single-level/to-delete.txt
+DELETING: tests/data-tmp/single-level/to-delete.txt
+CHECKING: tests/data-tmp/single-level/to-delete
+DELETING: tests/data-tmp/single-level/to-delete
+IN: tests/data-tmp/double-level/directory-1
+CHECKING: tests/data-tmp/double-level/directory-1/stop.txt
+STOPPING: tests/data-tmp/double-level/directory-1/stop.txt
+IN: tests/data-tmp/double-level/directory-2
+CHECKING: tests/data-tmp/double-level/directory-2/stop.txt
+CHECKING: tests/data-tmp/double-level/directory-2/stop
+STOPPING: tests/data-tmp/double-level/directory-2/stop
+IN: tests/data-tmp/double-level/directory-3
+CHECKING: tests/data-tmp/double-level/directory-3/stop.txt
+CHECKING: tests/data-tmp/double-level/directory-3/stop
+CHECKING: tests/data-tmp/double-level/directory-3/to-delete.txt
+DELETING: tests/data-tmp/double-level/directory-3/to-delete.txt
+CHECKING: tests/data-tmp/double-level/directory-3/to-delete
+DELETING: tests/data-tmp/double-level/directory-3/to-delete"' '"$("$root_dir/lib/wingc" tests/test.conf)"'
+
+    condition_01='[ -d "$root_dir/tests/data-tmp/single-level" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 01: $condition_01'" "'$condition_01'"
+    condition_02='! [ -f "$root_dir/tests/data-tmp/single-level/to-delete.txt" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 02: $condition_02'" "'$condition_02'"
+    condition_03='! [ -d "$root_dir/tests/data-tmp/single-level/to-delete" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 03: $condition_03'" "'$condition_03'"
+    condition_04='! [ -f "$root_dir/tests/data-tmp/single-level/to-delete/.gitkeep" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 04: $condition_04'" "'$condition_04'"
+
+    condition_05='[ -d "$root_dir/tests/data-tmp/double-level/directory-1" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 05: $condition_05'" "'$condition_05'"
+    condition_06='[ -f "$root_dir/tests/data-tmp/double-level/directory-1/stop.txt" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 06: $condition_06'" "'$condition_06'"
+    condition_07='[ -f "$root_dir/tests/data-tmp/double-level/directory-1/to-delete.txt" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 07: $condition_07'" "'$condition_07'"
+    condition_08='[ -d "$root_dir/tests/data-tmp/double-level/directory-1/to-delete" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 08: $condition_08'" "'$condition_08'"
+    condition_09='[ -f "$root_dir/tests/data-tmp/double-level/directory-1/to-delete/.gitkeep" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 09: $condition_09'" "'$condition_09'"
+
+    condition_10='[ -d "$root_dir/tests/data-tmp/double-level/directory-2" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 10: $condition_10'" "'$condition_10'"
+    condition_11='[ -d "$root_dir/tests/data-tmp/double-level/directory-2/stop" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 11: $condition_11'" "'$condition_11'"
+    condition_12='[ -f "$root_dir/tests/data-tmp/double-level/directory-2/stop/.gitkeep" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 12: $condition_12'" "'$condition_12'"
+    condition_13='[ -f "$root_dir/tests/data-tmp/double-level/directory-2/to-delete.txt" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 13: $condition_13'" "'$condition_13'"
+    condition_14='[ -d "$root_dir/tests/data-tmp/double-level/directory-2/to-delete" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 14: $condition_14'" "'$condition_14'"
+    condition_15='[ -f "$root_dir/tests/data-tmp/double-level/directory-2/to-delete/.gitkeep" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 15: $condition_15'" "'$condition_15'"
+
+    condition_16='[ -d "$root_dir/tests/data-tmp/double-level/directory-3" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 16: $condition_16'" "'$condition_16'"
+    condition_17='! [ -f "$root_dir/tests/data-tmp/double-level/directory-3/to-delete.txt" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 17: $condition_17'" "'$condition_17'"
+    condition_18='! [ -d "$root_dir/tests/data-tmp/double-level/directory-3/to-delete" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 18: $condition_18'" "'$condition_18'"
+    condition_19='! [ -f "$root_dir/tests/data-tmp/double-level/directory-3/to-delete/.gitkeep" ]'
+    ${_ASSERT_TRUE_} "'Error asserting condition number 19: $condition_19'" "'$condition_19'"
+}
+
+. "$(command -v shunit2)"

@@ -1,0 +1,54 @@
+#!/bin/sh
+
+test_dir="$PWD"
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+eval "$(exe/print-vars 'envs.test.conf')"
+
+cd "$test_dir" || exit 1
+
+test_cmd()
+{
+    ${_ASSERT_SAME_} '"debug.exec: CALLS: directory/script -> "$root_dir/exe/cmd" CMD: echo \"Lorem ipsum\" MSG: Lorem ipsum"' '"$("$root_dir/exe/cmd" "$SUBCHANNEL_EXEC" "directory/script" "echo \"Lorem ipsum\"")"'
+}
+
+test_log_debug()
+{
+    ${_ASSERT_SAME_} '"debug.exec: CALLS: directory/script CMD: command MSG: command output"' '"$("$root_dir/exe/log-debug" "exec" "directory/script" "command" "command output")"'
+}
+
+test_log_error()
+{
+    ${_ASSERT_SAME_} '"error.exec: CALLS: directory/script CMD: command MSG: command output"' '"$("$root_dir/exe/log-error" "exec" "directory/script" "command" "command output")"'
+}
+
+test_print_vars()
+{
+    expected='export ENV_VAR_A=10
+export ENV_VAR_B=2
+export ENV_VAR_C=30
+export ENV_VAR_D=4
+export ENV_VAR_E=5'
+
+    ${_ASSERT_SAME_} '"$expected"' '"$("$root_dir/exe/print-vars" "$root_dir/exe/tests/print-vars/envs.conf")"'
+}
+
+test_section()
+{
+    line_1='                                                                                                                        '
+    line_2='  Executing script                                                                                                      '
+    line_3='                                                                                                                        '
+
+    expected="$line_1
+$line_2
+$line_3"
+
+    ${_ASSERT_SAME_} '"$expected"' '"$("$root_dir/exe/section" "script")"'
+}
+
+. "$(command -v shunit2)"

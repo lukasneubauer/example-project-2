@@ -1,0 +1,9 @@
+#!/bin/sh
+
+prompt_debian_chroot='$(test "$debian_chroot" != "" && echo "\[\033[01;31m\]($debian_chroot)\[\033[00m\] " || echo "")'
+prompt_user_at_host='\[\033[01;32m\]\u@\h\[\033[00m\]'
+prompt_current_path='\[\033[01;34m\]\w\[\033[00m\]'
+prompt_git_branch='$(test "$(get_git_branch)" != "" && echo " \[\033[01;33m\]($(get_git_branch))\[\033[00m\] " || echo " ")'
+prompt_end='\[\033[01;34m\]\$\[\033[00m\]'
+
+PS1="$prompt_debian_chroot$prompt_user_at_host $prompt_current_path$prompt_git_branch$prompt_end "

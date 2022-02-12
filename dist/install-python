@@ -1,0 +1,17 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+deb/apt-get-install "$0" python2
+deb/apt-get-install "$0" python3
+
+deb/set-alternative "$0" '/usr/bin/python' 'python' '/usr/bin/python2' '1'
+deb/set-alternative "$0" '/usr/bin/python' 'python' '/usr/bin/python3' '2'
+
+deb/set-default-program "$0" "$(command -v 'python3')" 'python'

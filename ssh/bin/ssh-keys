@@ -1,0 +1,21 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+
+lib/mkdir "$call_trace -> $0" "$SSH_KEYS_DIR"
+
+lib/cp "$call_trace -> $0" "$SSH_KEYS_DIR_SOURCE/id_rsa" "$SSH_KEYS_DIR/id_rsa"
+lib/cp "$call_trace -> $0" "$SSH_KEYS_DIR_SOURCE/id_rsa.pub" "$SSH_KEYS_DIR/id_rsa.pub"
+lib/cp "$call_trace -> $0" "$SSH_KEYS_DIR_SOURCE/id_rsa_git" "$SSH_KEYS_DIR/id_rsa_git"
+lib/cp "$call_trace -> $0" "$SSH_KEYS_DIR_SOURCE/id_rsa_git.pub" "$SSH_KEYS_DIR/id_rsa_git.pub"
+
+lib/chmod "$call_trace -> $0" '0600' "$SSH_KEYS_DIR/id_rsa"
+lib/chmod "$call_trace -> $0" '0600' "$SSH_KEYS_DIR/id_rsa.pub"
+lib/chmod "$call_trace -> $0" '0600' "$SSH_KEYS_DIR/id_rsa_git"
+lib/chmod "$call_trace -> $0" '0600' "$SSH_KEYS_DIR/id_rsa_git.pub"

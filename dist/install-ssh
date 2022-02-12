@@ -1,0 +1,12 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+ssh/bin/ssh-keys "$0"
+ssh/bin/ssh-scan "$0"

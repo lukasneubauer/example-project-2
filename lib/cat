@@ -1,0 +1,22 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+escape()
+{
+    echo "$1" | sed 's/\"/\\\"/g' | sed 's/\$/\\\$/g'
+}
+
+call_trace="$1"
+file="$2"
+dest="$3"
+
+exe/cmd "$SUBCHANNEL_EXEC" "$call_trace -> $0" "cat \"$file\" >> \"$dest\""
+
+while read -r line ; do
+    exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if grep -q -F \"$(escape "$line")\" \"$dest\" ; then echo \"Line \\\"$line\\\" was put into \\\"$dest\\\" file successfully.\" ; exit 0 ; else echo \"Line \\\"$line\\\" was not put into \\\"$dest\\\" file.\" ; exit 1 ; fi"
+done < "$file"

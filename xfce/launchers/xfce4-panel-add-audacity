@@ -1,0 +1,11 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+
+xfce/bin/xfce4-panel-launcher "$call_trace -> $0" 'audacity.desktop' 'Audacity' 'Record and edit audio files' 'audacity %F' 'audacity' 'false'

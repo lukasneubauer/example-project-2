@@ -1,0 +1,14 @@
+#!/bin/sh
+
+composer_old_bin="$HOME/.composer/vendor/bin"
+if [ -d "$composer_old_bin" ] ; then
+    PATH="$composer_old_bin:$PATH"
+fi
+composer_new_bin="$HOME/.config/composer/vendor/bin"
+if [ -d "$composer_new_bin" ] ; then
+    PATH="$composer_new_bin:$PATH"
+fi
+
+for path in disks/bin g3/bin paths/bin paths-git php/paths saves/bin wingc/bin ; do
+    PATH="$HOME/Projects/operating-system/$path:$PATH"
+done

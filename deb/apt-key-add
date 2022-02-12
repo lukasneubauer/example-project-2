@@ -1,0 +1,12 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+file="$2"
+
+exe/cmd-sudo "$SUBCHANNEL_EXEC" "$call_trace -> $0" "apt-key add \"$file\""

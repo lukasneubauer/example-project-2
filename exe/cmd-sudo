@@ -1,0 +1,64 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+log()
+{
+    channel="$1"
+    subchannel="$2"
+    call_trace="$3"
+    command="$4"
+    lines="$5"
+    for line in $lines ; do
+        if [ "$channel" = 'debug' ] ; then
+            exe/log-debug "$subchannel" "$call_trace" "$command" "$line"
+        fi
+        if [ "$channel" = 'error' ] ; then
+            exe/log-error "$subchannel" "$call_trace" "$command" "$line"
+        fi
+    done
+}
+
+log_debug()
+{
+    subchannel="$1"
+    call_trace="$2"
+    command="$3"
+    lines="$4"
+    if [ "$lines" = '' ] ; then
+        exe/log-debug "$subchannel" "$call_trace" "$command" 'No output'
+    else
+        log 'debug' "$subchannel" "$call_trace" "$command" "$lines"
+    fi
+}
+
+log_error()
+{
+    subchannel="$1"
+    call_trace="$2"
+    command="$3"
+    lines="$4"
+    if [ "$lines" = '' ] ; then
+        exe/log-error "$subchannel" "$call_trace" "$command" 'No output'
+    else
+        log 'error' "$subchannel" "$call_trace" "$command" "$lines"
+    fi
+}
+
+subchannel="$1"
+call_trace="$2"
+command="$3"
+old_ifs="$IFS"
+IFS='
+'
+lines="$(sudo -k && printf "%s" "$SUDO_PASSWORD" | sudo -p '' -S env PATH="$PATH" sh -c "$command" 2>&1)"
+if [ "$?" -eq 0 ] ; then
+    log_debug "$subchannel" "$call_trace -> $0" "$command" "$lines"
+else
+    log_error "$subchannel" "$call_trace -> $0" "$command" "$lines"
+fi
+IFS="$old_ifs"

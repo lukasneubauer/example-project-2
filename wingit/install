@@ -1,0 +1,15 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD")"
+
+cd "$root_dir" || exit 1
+
+eval "$(exe/print-vars 'envs.conf')"
+
+if [ "$HOME_DIR" != "$HOME" ] ; then
+    mkdir -p "$HOME_DIR"
+fi
+
+ins/install-dist

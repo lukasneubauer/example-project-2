@@ -1,0 +1,3 @@
+#!/bin/sh
+
+git commit -m 'Ignoring some error messages by PHPStan'

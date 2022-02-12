@@ -1,0 +1,12 @@
+#!/bin/sh
+
+t="$(uptime -p)"
+
+h="$(echo "$t" | cut -d ' ' -f 2)"
+m="$(echo "$t" | cut -d ' ' -f 4)"
+
+if [ "$h" = '' ] ; then
+    h='00'
+fi
+
+uptime -s "$h:$m" | cut -d ' ' -f 2 | cut -d ':' -f -2

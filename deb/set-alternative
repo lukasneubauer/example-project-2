@@ -1,0 +1,17 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+link="$2"
+name="$3"
+path="$4"
+priority="$5"
+
+exe/cmd-sudo "$SUBCHANNEL_EXEC" "$call_trace -> $0" "update-alternatives --install \"$link\" \"$name\" \"$path\" \"$priority\""
+
+exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if update-alternatives --list \"$name\" | grep -q \"^$path$\" ; then echo \"Alternative \\\"$path\\\" was set successfully.\" ; exit 0 ; else echo \"Alternative \\\"$path\\\" was not set.\" ; exit 1 ; fi"

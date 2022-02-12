@@ -1,0 +1,23 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+exe/section "$0"
+
+virtualbox_asc="$TMP_DIR/virtualbox.asc"
+
+lib/fwrite-sudo "$0" "deb [arch=amd64] https://download.virtualbox.org/virtualbox/debian $(dist/utils/distrib-codename) contrib" '/etc/apt/sources.list.d/virtualbox.list'
+
+lib/curl "$0" 'https://www.virtualbox.org/download/oracle_vbox_2016.asc' "$virtualbox_asc"
+
+deb/apt-key-add "$0" "$virtualbox_asc"
+
+lib/rm "$0" "$virtualbox_asc"
+
+deb/apt-get-update "$0"
+
+deb/apt-get-install "$0" virtualbox-6.0

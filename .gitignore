@@ -1,0 +1,4 @@
+/.env.local
+/.env.sudo.local
+/.env.test.local
+/.idea/

@@ -1,0 +1,37 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+if [ "$WRITE_LOGS" -eq 1 ] ; then
+    mkdir -p "$LOGS_DIR"
+fi
+
+date="$(date '+%Y-%m-%d %H:%M:%S')"
+
+channel='error'
+subchannel="$1"
+call_trace="$2"
+command="$3"
+message="$4"
+
+label_calls='CALLS'
+label_cmd='CMD'
+label_msg='MSG'
+
+out="$channel.$subchannel: $label_calls: $call_trace $label_cmd: $command $label_msg: $message"
+log="[$date] $out"
+
+if [ "$WRITE_LOGS" -eq 1 ] ; then
+    printf "%s\n" "$log" >> "$OUT_LOG_FILE"
+    printf "%s\n" "$log" >> "$ERR_LOG_FILE"
+fi
+
+if [ "$USE_COLORS" -eq 1 ] ; then
+    printf "\033[01;31m%s\033[00m\n" "$out"
+else
+    printf "%s\n" "$out"
+fi

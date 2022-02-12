@@ -1,0 +1,3 @@
+#!/bin/sh
+
+sudo phpenmod -v ALL -s ALL opcache

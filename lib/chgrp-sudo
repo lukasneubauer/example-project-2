@@ -1,0 +1,15 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+grp="$2"
+dst="$3"
+
+exe/cmd-sudo "$SUBCHANNEL_EXEC" "$call_trace -> $0" "chgrp -v -R \"$grp\" \"$dst\""
+
+exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if [ \"$(stat -c %G "$dst")\" = \"$grp\" ] ; then echo \"File \\\"$dst\\\" group was successfully set to \\\"$grp\\\".\" ; exit 0 ; else echo \"File \\\"$dst\\\" group was not set to \\\"$grp\\\".\" ; exit 1 ; fi"

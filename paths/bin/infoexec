@@ -1,0 +1,70 @@
+#!/bin/sh
+
+banner()
+{
+    printf "%s\n" "$1"
+}
+
+repeat()
+{
+    letter="$1"
+    number="$2"
+    result=''
+
+    for _ in $(seq 1 "$number") ; do
+        result="${result}${letter}"
+    done
+
+    printf "%s" "$result"
+}
+
+dashes()
+{
+    repeat '-' "$1"
+}
+
+spaces()
+{
+    repeat ' ' "$1"
+}
+
+header()
+{
+    text="$1"
+    text_length="${#text}"
+
+    cols=120
+    bars=4
+    dots=3
+    gaps=1
+
+    if [ "$text_length" -gt "$((cols - bars))" ] ; then
+        text="$(echo "$text" | cut -c -"$((cols - bars - dots))")... "
+    fi
+
+    prefix='+ '
+    prefix_length="${#prefix}"
+
+    end_of_the_line_length="$((cols - prefix_length - text_length - gaps))"
+    end_of_the_line="$(spaces "$end_of_the_line_length")"
+
+    banner "$(dashes "$cols")"
+    banner "${prefix}${text}${end_of_the_line}+"
+    banner "$(dashes "$cols")"
+}
+
+output()
+{
+    old_ifs="$IFS"
+    IFS='
+'
+
+    sh -c "$1" 2>&1 | while read -r line ; do
+        printf "%s\n" "$line"
+    done
+
+    IFS="$old_ifs"
+}
+
+header "$1"
+output "$1"

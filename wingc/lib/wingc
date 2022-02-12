@@ -1,0 +1,120 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+directories=''
+brakes=''
+delete=''
+
+add_value_base_dir()
+{
+    subj="$1"
+    if [ "$directories" = '' ] ; then
+        directories="$subj"
+    else
+        directories="$directories:$subj"
+    fi
+}
+
+add_value_base_dir_multi()
+{
+    subj="$1"
+    for dir in "$subj"/* ; do
+        add_value_base_dir "$dir"
+    done
+}
+
+add_value_stop_if_exists()
+{
+    subj="$1"
+    if [ "$brakes" = '' ] ; then
+        brakes="$subj"
+    else
+        brakes="$brakes:$subj"
+    fi
+}
+
+add_value_delete()
+{
+    subj="$1"
+    if [ "$delete" = '' ] ; then
+        delete="$subj"
+    else
+        delete="$delete:$subj"
+    fi
+}
+
+parse_configuration()
+{
+    config="$1"
+    if [ "$config" = '' ] || ! [ -f "$config" ] ; then
+        1>&2 echo "Error: Please, make sure that you have specified existing configuration file as first argument."
+        exit 1
+    fi
+    while read -r line ; do
+        k="$(echo "$line" | cut -d '=' -f 1)"
+        v="$(echo "$line" | cut -d '=' -f 2)"
+        case "$k" in
+            BASE_DIR)
+                add_value_base_dir "$v"
+                ;;
+            BASE_DIR_MULTI)
+                add_value_base_dir_multi "$v"
+                ;;
+            STOP_IF_EXISTS)
+                add_value_stop_if_exists "$v"
+                ;;
+            DELETE)
+                add_value_delete "$v"
+                ;;
+            *)
+                1>&2 echo "Error: Specified undefined key '$k' in configuration file."
+                1>&2 echo '       Supported keys are: BASE_DIR, BASE_DIR_MULTI, STOP_IF_EXISTS and DELETE.'
+                exit 1
+                ;;
+        esac
+    done < "$config"
+}
+
+eval_vars()
+{
+    eval "echo $1"
+}
+
+clean()
+{
+    old_ifs="$IFS"
+    IFS=':'
+    for dir in $directories ; do
+        has_brake=0
+        directory="$(eval_vars "$dir")"
+        echo "IN: $directory"
+        for brake in $brakes ; do
+            stop="$directory/$brake"
+            echo "CHECKING: $stop"
+            if [ -e "$stop" ] ; then
+                echo "STOPPING: $stop"
+                has_brake=1
+                break
+            fi
+        done
+        if [ "$has_brake" -eq 0 ] ; then
+            for del in $delete ; do
+                rem="$directory/$del"
+                echo "CHECKING: $rem"
+                if [ -e "$rem" ] ; then
+                    echo "DELETING: $rem"
+                    rm -fr "$rem"
+                fi
+            done
+        fi
+    done
+    IFS="$old_ifs"
+}
+
+parse_configuration "$1"
+clean

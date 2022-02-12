@@ -1,0 +1,14 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+directory="$2"
+
+exe/cmd "$SUBCHANNEL_EXEC" "$call_trace -> $0" "mkdir -p -v \"$directory\""
+
+exe/cmd "$SUBCHANNEL_TEST" "$call_trace -> $0" "if [ -d \"$directory\" ] ; then echo \"Directory \\\"$directory\\\" was created successfully.\" ; exit 0 ; else \"Directory \\\"$directory\\\" was not created.\" ; exit 1 ; fi"

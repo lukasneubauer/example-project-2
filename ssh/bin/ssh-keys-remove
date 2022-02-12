@@ -1,0 +1,12 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+
+lib/rm "$call_trace -> $0" "$SSH_KEYS_DIR/id_rsa_git"
+lib/rm "$call_trace -> $0" "$SSH_KEYS_DIR/id_rsa_git.pub"

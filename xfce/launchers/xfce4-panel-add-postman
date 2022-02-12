@@ -1,0 +1,11 @@
+#!/bin/sh
+
+cd "$(dirname "$(command -v "$0")")" || exit 1
+
+root_dir="$(realpath "$PWD/../..")"
+
+cd "$root_dir" || exit 1
+
+call_trace="$1"
+
+xfce/bin/xfce4-panel-launcher "$call_trace -> $0" 'postman.desktop' 'Postman' 'Postman API platform' "$OPT_DIR/Postman/Postman" "$OPT_DIR/Postman/app/resources/app/assets/icon.png" 'false'

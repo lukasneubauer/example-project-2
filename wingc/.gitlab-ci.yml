@@ -1,0 +1,10 @@
+image:
+    name: alpine:3.15
+
+before_script:
+    - apk update
+    - apk add --no-cache shunit2
+
+build:
+    script:
+        - tests/test
